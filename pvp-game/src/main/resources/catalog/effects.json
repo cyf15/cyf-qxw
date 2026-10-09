@@ -1,0 +1,770 @@
+{
+  "Strike_R": {
+    "effects": [
+      "SLASH_DIAGONAL",
+      "BLUNT_HEAVY",
+      "SLASH_DIAGONAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Defend_R": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Bash": {
+    "effects": [
+      "BLUNT_HEAVY",
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Anger": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": [
+      "VerticalAuraEffect"
+    ]
+  },
+  "Iron Wave": {
+    "effects": [
+      "SLASH_VERTICAL"
+    ],
+    "sounds": [],
+    "vfx": [
+      "IronWaveEffect"
+    ]
+  },
+  "Twin Strike": {
+    "effects": [
+      "SLASH_HORIZONTAL",
+      "SLASH_VERTICAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Cleave": {
+    "effects": [
+      "NONE"
+    ],
+    "sounds": [
+      "ATTACK_HEAVY"
+    ],
+    "vfx": [
+      "CleaveEffect"
+    ]
+  },
+  "Pommel Strike": {
+    "effects": [
+      "SLASH_DIAGONAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Shrug It Off": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Battle Trance": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Inflame": {
+    "effects": [],
+    "sounds": [],
+    "vfx": [
+      "InflameEffect"
+    ]
+  },
+  "Metallicize": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Seeing Red": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Bloodletting": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Impervious": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Heavy Blade": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": [
+      "VerticalImpactEffect"
+    ]
+  },
+  "Clothesline": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Thunderclap": {
+    "effects": [
+      "NONE",
+      "NONE"
+    ],
+    "sounds": [
+      "THUNDERCLAP"
+    ],
+    "vfx": [
+      "LightningEffect"
+    ]
+  },
+  "Uppercut": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Pummel": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Bludgeon": {
+    "effects": [
+      "NONE"
+    ],
+    "sounds": [],
+    "vfx": [
+      "WeightyImpactEffect"
+    ]
+  },
+  "Carnage": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": [
+      "ViolentAttackEffect",
+      "StarBounceEffect",
+      "ViolentAttackEffect",
+      "StarBounceEffect"
+    ]
+  },
+  "Sword Boomerang": {
+    "effects": [
+      "SLASH_HORIZONTAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Hemokinesis": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": [
+      "HemokinesisEffect"
+    ]
+  },
+  "Dropkick": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Flex": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Limit Break": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Shockwave": {
+    "effects": [
+      "NONE",
+      "NONE"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Intimidate": {
+    "effects": [
+      "NONE"
+    ],
+    "sounds": [
+      "INTIMIDATE"
+    ],
+    "vfx": [
+      "IntimidateEffect"
+    ]
+  },
+  "Disarm": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Entrench": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Flame Barrier": {
+    "effects": [],
+    "sounds": [],
+    "vfx": [
+      "FlameBarrierEffect",
+      "FlameBarrierEffect"
+    ]
+  },
+  "Rage": {
+    "effects": [],
+    "sounds": [
+      "RAGE"
+    ],
+    "vfx": [
+      "ShockWaveEffect"
+    ]
+  },
+  "Rupture": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Berserk": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Barricade": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Juggernaut": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Brutality": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Combust": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Feel No Pain": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dark Embrace": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Demon Form": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Strike_G": {
+    "effects": [
+      "SLASH_DIAGONAL",
+      "BLUNT_HEAVY",
+      "SLASH_HORIZONTAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Defend_G": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Neutralize": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dagger Spray": {
+    "effects": [
+      "NONE",
+      "NONE"
+    ],
+    "sounds": [],
+    "vfx": [
+      "DaggerSprayEffect",
+      "DaggerSprayEffect"
+    ]
+  },
+  "Poisoned Stab": {
+    "effects": [
+      "SLASH_VERTICAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Deadly Poison": {
+    "effects": [
+      "POISON"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Backflip": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dodge and Roll": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Footwork": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Noxious Fumes": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Slice": {
+    "effects": [
+      "SLASH_DIAGONAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Bane": {
+    "effects": [
+      "SLASH_HORIZONTAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Outmaneuver": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Blur": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dash": {
+    "effects": [
+      "SLASH_HORIZONTAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Sucker Punch": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Flying Knee": {
+    "effects": [
+      "BLUNT_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Quick Slash": {
+    "effects": [
+      "SLASH_HORIZONTAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Predator": {
+    "effects": [
+      "SLASH_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Leg Sweep": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Crippling Poison": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "PiercingWail": {
+    "effects": [
+      "NONE",
+      "NONE"
+    ],
+    "sounds": [
+      "ATTACK_PIERCING_WAIL"
+    ],
+    "vfx": [
+      "ShockWaveEffect",
+      "ShockWaveEffect"
+    ]
+  },
+  "Catalyst": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Caltrops": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Wraith Form v2": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "After Image": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Envenom": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "A Thousand Cuts": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Strike_B": {
+    "effects": [
+      "BLUNT_LIGHT",
+      "BLUNT_HEAVY",
+      "BLUNT_LIGHT"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Defend_B": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Zap": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dualcast": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Ball Lightning": {
+    "effects": [
+      "SLASH_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Cold Snap": {
+    "effects": [
+      "SLASH_HEAVY"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Beam Cell": {
+    "effects": [
+      "BLUNT_HEAVY",
+      "NONE"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Leap": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Defragment": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Capacitor": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Glacier": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Compile Driver": {
+    "effects": [
+      "BLUNT_LIGHT"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Chill": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Darkness": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Chaos": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Conserve Battery": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Melter": {
+    "effects": [
+      "FIRE"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Sweeping Beam": {
+    "effects": [
+      "FIRE"
+    ],
+    "sounds": [
+      "ATTACK_DEFECT_BEAM"
+    ],
+    "vfx": [
+      "SweepingBeamEffect"
+    ]
+  },
+  "Rip and Tear": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Doom and Gloom": {
+    "effects": [
+      "NONE"
+    ],
+    "sounds": [
+      "ATTACK_HEAVY"
+    ],
+    "vfx": [
+      "CleaveEffect"
+    ]
+  },
+  "Auto Shields": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Fission": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Fusion": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Coolheaded": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Skim": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Aggregate": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Double Energy": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Redo": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Consume": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Loop": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Electrodynamics": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Static Discharge": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Biased Cognition": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Buffer": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Heatsinks": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Machine Learning": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Storm": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Finesse": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Flash of Steel": {
+    "effects": [
+      "SLASH_HORIZONTAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Good Instincts": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dramatic Entrance": {
+    "effects": [
+      "SLASH_DIAGONAL"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Bandage Up": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Panacea": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Trip": {
+    "effects": [
+      "NONE"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Blind": {
+    "effects": [
+      "NONE"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Swift Strike": {
+    "effects": [
+      "BLUNT_LIGHT"
+    ],
+    "sounds": [],
+    "vfx": []
+  },
+  "Master of Strategy": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Deep Breath": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Dark Shackles": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Impatience": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Apotheosis": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Panache": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  },
+  "Sadistic Nature": {
+    "effects": [],
+    "sounds": [],
+    "vfx": []
+  }
+}
