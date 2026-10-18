@@ -4,6 +4,8 @@ Java 17+、libGDX、H2。两人各选一名角色、各构筑恰好 15 张卡，
 
 ## 启动
 
+新电脑请用 `SpireDuel-Windows-x64.zip` 免安装发行包：全部解压后双击包内 `启动游戏.cmd`，无需 Java 或网络。构建方法见上一层 README 的“下载与运行”。下述脚本用于已经安装 Java 的源码开发环境。
+
 Windows 可直接双击上一层的 `开始游戏.cmd`，或本目录的 `run-gui.cmd`。命令行版使用 `run-cui.cmd`。已经构建的程序位于 `target/spire-hotseat.jar`，需与 `target/lib/` 一起保留。
 
 当前只支持并验证 Windows。macOS 适配已延后到上一层 [TODO.md](../TODO.md)；现有 `.sh` 脚本仅作未验证草稿保留。
