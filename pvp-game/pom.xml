@@ -4,6 +4,7 @@
   <groupId>lab.pvp</groupId><artifactId>spire-hotseat</artifactId><version>0.1.0</version>
   <properties>
     <maven.compiler.release>17</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <pvp.buildDir>target</pvp.buildDir>
     <gdx.version>1.13.1</gdx.version>
   </properties>
   <dependencies>
@@ -17,6 +18,7 @@
     <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency>
   </dependencies>
   <build>
+    <directory>${pvp.buildDir}</directory>
     <finalName>spire-hotseat</finalName>
     <resources>
       <resource><directory>src/main/resources</directory></resource>
