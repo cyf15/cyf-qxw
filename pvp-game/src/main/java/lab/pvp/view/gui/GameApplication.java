@@ -474,9 +474,13 @@ public final class GameApplication extends ApplicationAdapter {
         List<SavedDeck> saved = controller.loadDecks(heroes[deckPlayer]);
         Dialog dialog = dialog("Saved decks - " + heroes[deckPlayer].displayName());
         Table items = new Table();
+        Label loadFeedback = muted("");
+        loadFeedback.setWrap(true);
         if (saved.isEmpty()) items.add(label("No saved decks for this class yet.", "body")).pad(20);
         for (SavedDeck deck : saved) {
             items.add(button(deck.name() + "  /  " + deck.cards().size() + " cards", "load-" + deck.id(), false, () -> {
+                try { controller.validateDeck(heroes[deckPlayer], deck.cards()); }
+                catch (IllegalArgumentException error) { loadFeedback.setText(error.getMessage()); return; }
                 decks.get(deckPlayer).clear();
                 decks.get(deckPlayer).addAll(deck.cards());
                 deckNames[deckPlayer] = deck.name();
@@ -485,7 +489,8 @@ public final class GameApplication extends ApplicationAdapter {
                 showDeck();
             })).width(510).height(45).padBottom(6).row();
         }
-        dialog.getContentTable().add(scroll(items, false)).width(550).height(Math.min(360, Math.max(85, saved.size() * 55)));
+        dialog.getContentTable().add(scroll(items, false)).width(550).height(Math.min(360, Math.max(85, saved.size() * 55))).row();
+        dialog.getContentTable().add(loadFeedback).width(520).padTop(8);
         dialog.getButtonTable().add(button("Close", "close-load", false, dialog::hide)).width(150).padTop(14);
         dialog.show(stage);
     }
@@ -675,7 +680,7 @@ public final class GameApplication extends ApplicationAdapter {
                         com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut(.42f)),
                     com.badlogic.gdx.scenes.scene2d.actions.Actions.removeActor()));
                 if (resolvingCard.type() == CardType.ATTACK) heroActors[player].attack();
-                var metadata = sourceEffects.get(resolvingCard.baseId());
+                var metadata = sourceEffects.get(resolvingCard.id());
                 if (metadata != null) for (var sound : metadata.getAsJsonArray("sounds")) audio.key(sound.getAsString());
                 resolutionDelay = .2f;
             }
@@ -686,9 +691,9 @@ public final class GameApplication extends ApplicationAdapter {
                 if (event.blocked() > 0) floating("Block -" + event.blocked(), player, Color.SKY);
                 String effect = "NONE";
                 if (event.name().equals("Attack") && resolvingCard != null && resolvingCard.type() == CardType.ATTACK) {
-                    var metadata = sourceEffects.get(resolvingCard.baseId());
+                    var metadata = sourceEffects.get(resolvingCard.id());
                     var effects = metadata.getAsJsonArray("effects");
-                    if (resolvingCard.baseId().equals("Pummel")) effect = resolvingHit++ < resolvingCard.magic() - 1 ? "BLUNT_LIGHT" : "BLUNT_HEAVY";
+                    if (resolvingCard.id().equals("Pummel")) effect = resolvingHit++ < resolvingCard.magic() - 1 ? "BLUNT_LIGHT" : "BLUNT_HEAVY";
                     else if (!effects.isEmpty()) effect = effects.get(Math.min(resolvingHit++, effects.size() - 1)).getAsString();
                     if (metadata.getAsJsonArray("vfx").toString().contains("LightningEffect")) flash("combat/lightning", player, false);
                 } else if (event.name().equals("Poison")) effect = "POISON";

@@ -3,7 +3,7 @@ package lab.pvp.model;
 final class AttackCard extends GameCard {
     AttackCard(CardDefinition definition) { super(definition); }
     @Override void resolve(BattleEngine engine, PlayerState owner, PlayerState opponent) {
-        String id = definition.baseId();
+        String id = definition.id();
         if (id.equals("Iron Wave") || id.equals("Dash")) engine.cardBlock(owner, definition.block());
         if (id.equals("Hemokinesis")) engine.loseHp(owner, definition.magic());
         if (id.equals("Melter")) opponent.block = 0;

@@ -342,10 +342,6 @@ public final class BattleEngine {
         visual("EXHAUST", owner, null, card.definition().name(), 1, 0, card.definition());
         rawBlock(owner, owner.power("Feel No Pain")); draw(owner, owner.power("Dark Embrace"));
     }
-    void upgradeDeck(PlayerState owner) {
-        for (List<GameCard> pile : List.of(owner.hand, owner.draw, owner.discard, queue)) for (GameCard card : pile) card.upgrade();
-        event(owner.hero.displayName() + " upgrades all cards in hand, draw, discard and queue.");
-    }
     OrbType randomOrb() { return OrbType.values()[random.nextInt(OrbType.values().length)]; }
     boolean isOver() { return winner != -1; }
     private void finish(int result) {

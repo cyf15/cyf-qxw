@@ -1,4 +1,4 @@
-"""Reproduce the supported base/upgrade card catalog from the checked-out STS1 reference.
+"""Reproduce the supported base-card catalog from the checked-out STS1 reference.
 
 Run from any directory: python scripts/extract-card-catalog.py
 Only the explicitly implemented cards are exported. No art is generated.
@@ -20,7 +20,7 @@ SELECTED = {
 SELECTED["red"] += "Clothesline Thunderclap Uppercut Pummel Bludgeon Carnage SwordBoomerang Hemokinesis Dropkick Flex LimitBreak Shockwave Intimidate Disarm Entrench FlameBarrier Rage Rupture Berserk Barricade Juggernaut Brutality Combust FeelNoPain DarkEmbrace DemonForm".split()
 SELECTED["green"] += "Dash SuckerPunch FlyingKnee QuickSlash Predator LegSweep CripplingPoison PiercingWail Catalyst Caltrops WraithForm AfterImage Envenom AThousandCuts".split()
 SELECTED["blue"] += "Melter SweepingBeam RipAndTear DoomAndGloom AutoShields Fission Fusion Coolheaded Skim Aggregate DoubleEnergy Recursion Consume Loop Electrodynamics StaticDischarge BiasedCognition Buffer Heatsinks MachineLearning Storm".split()
-SELECTED["colorless"] += "DarkShackles Impatience Apotheosis Panache SadisticNature".split()
+SELECTED["colorless"] += "DarkShackles Impatience Panache SadisticNature".split()
 HEROES = {"red": "IRONCLAD", "green": "SILENT", "blue": "DEFECT", "colorless": ""}
 strings = json.loads((RESOURCES / "localization/eng/cards.json").read_text(encoding="utf-8-sig"))
 rows = []
@@ -37,34 +37,18 @@ for color, classes in SELECTED.items():
             found = re.search(r"this\." + name + r"\s*=\s*(\d+)", constructor)
             return int(found.group(1)) if found else 0
         damage, block, magic = [stat(n) for n in ("baseDamage", "baseBlock", "baseMagicNumber")]
-        upgrade = code.split("public void upgrade()", 1)[1]
-        upgrade = upgrade.split("public AbstractCard makeCopy", 1)[0]
         art_path = "images/1024Portraits/" + art + ".png"
         if not (RESOURCES / art_path).is_file():
             raise FileNotFoundError(art_path)
-        for upgraded in (False, True):
-            values = [damage, block, magic]
-            price = int(cost)
-            exhaust = "this.exhaust = true" in constructor
-            innate = "this.isInnate = true" in constructor
-            ethereal = "this.isEthereal = true" in constructor
-            if upgraded:
-                for index, method in enumerate(("upgradeDamage", "upgradeBlock", "upgradeMagicNumber")):
-                    change = re.search(method + r"\((-?\d+)\)", upgrade)
-                    if change: values[index] += int(change.group(1))
-                change = re.search(r"upgradeBaseCost\((\d+)\)", upgrade)
-                if change: price = int(change.group(1))
-                if "this.exhaust = false" in upgrade: exhaust = False
-                if "this.isInnate = true" in upgrade: innate = True
-                if "this.isEthereal = false" in upgrade: ethereal = False
-            text = strings[card_id].get("UPGRADE_DESCRIPTION") if upgraded and "cardStrings.UPGRADE_DESCRIPTION" in upgrade else None
-            text = text or strings[card_id]["DESCRIPTION"]
-            for token, number in zip(("!D!", "!B!", "!M!"), values): text = text.replace(token, str(number))
-            text = re.sub(r"#[rgbyp]", "", text).replace(" NL ", " ")
-            for icon in ("[R]", "[G]", "[B]", "[E]"): text = text.replace(icon, "Energy")
-            rows.append([card_id + ("+" if upgraded else ""), strings[card_id]["NAME"] + ("+" if upgraded else ""), HEROES[color], card_type, str(price), text,
-                         art_path, *map(str, values), str(exhaust).lower(), str(innate).lower(),
-                         path.relative_to(SOURCE).as_posix(), str(ethereal).lower()])
+        text = strings[card_id]["DESCRIPTION"]
+        for token, number in zip(("!D!", "!B!", "!M!"), (damage, block, magic)): text = text.replace(token, str(number))
+        text = re.sub(r"#[rgbyp]", "", text).replace(" NL ", " ")
+        for icon in ("[R]", "[G]", "[B]", "[E]"): text = text.replace(icon, "Energy")
+        rows.append([card_id, strings[card_id]["NAME"], HEROES[color], card_type, cost, text,
+                     art_path, *map(str, (damage, block, magic)),
+                     str("this.exhaust = true" in constructor).lower(),
+                     str("this.isInnate = true" in constructor).lower(), path.relative_to(SOURCE).as_posix(),
+                     str("this.isEthereal = true" in constructor).lower()])
 out = PROJECT / "src/main/resources/catalog"
 out.mkdir(parents=True, exist_ok=True)
 (out / "cards.tsv").write_text("\n".join("\t".join(row).replace("\r", "") for row in rows) + "\n", encoding="utf-8")
@@ -75,7 +59,6 @@ sounds = dict(re.findall(r'this\.map\.put\("([^"\n]+)", load\("([^"\n]+)"\)\)', 
 (out / "sounds.json").write_text(json.dumps(sounds, indent=2) + "\n", encoding="utf-8")
 effects = {}
 for row in rows:
-    if row[0].endswith("+"): continue
     code = re.sub(r"/\*.*?\*/", "", (SOURCE / row[12]).read_text(encoding="utf-8"), flags=re.S)
     use = code.split("public void use(", 1)[1].split("public void upgrade", 1)[0]
     effects[row[0]] = {"effects": re.findall(r"AttackEffect\.(\w+)", use),

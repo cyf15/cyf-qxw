@@ -73,4 +73,29 @@ public class GameControllerTest {
             assertSame(previous, c.battle());
         }
     }
+    @Test public void removedUpgradesCannotBeImportedOrSaved() throws Exception {
+        try (GameController c = new GameController(data())) {
+            SavedDeck base = c.saveDeck("Base", Hero.IRONCLAD, c.cards().starterDeck(Hero.IRONCLAD));
+            List<String> upgraded = Collections.nCopies(15, "Strike_R+");
+            assertThrows(IllegalArgumentException.class, () -> c.saveDeck("Old upgrades", Hero.IRONCLAD, upgraded));
+            Path file = data().resolve("legacy-upgrades.json");
+            Files.writeString(file, "{\"name\":\"Legacy\",\"hero\":\"IRONCLAD\",\"cards\":["
+                + String.join(",", Collections.nCopies(15, "\"Strike_R+\"")) + "]}");
+            assertThrows(IllegalArgumentException.class, () -> c.importDeck(file));
+            assertEquals(List.of(base), c.loadDecks(Hero.IRONCLAD));
+        }
+    }
+    @Test public void legacyDatabaseDeckIsPreservedButCannotStartAMatch() {
+        try (var dao = new lab.pvp.persistence.H2GameDao(data().resolve("hotseat"))) {
+            dao.saveDeck("Legacy", Hero.IRONCLAD, Collections.nCopies(15, "Strike_R+"));
+        }
+        try (GameController c = new GameController(data())) {
+            SavedDeck legacy = c.loadDecks(Hero.IRONCLAD).get(0);
+            c.startMatch(Hero.IRONCLAD, c.cards().starterDeck(Hero.IRONCLAD), Hero.SILENT, c.cards().starterDeck(Hero.SILENT), 1);
+            BattleEngine previous = c.battle();
+            assertThrows(IllegalArgumentException.class, () -> c.startMatch(Hero.IRONCLAD, legacy.cards(), Hero.SILENT, c.cards().starterDeck(Hero.SILENT), 1));
+            assertSame(previous, c.battle());
+            assertEquals(List.of(legacy), c.loadDecks(Hero.IRONCLAD));
+        }
+    }
 }

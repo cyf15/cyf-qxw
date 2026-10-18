@@ -3,8 +3,8 @@ package lab.pvp.model;
 final class SkillCard extends GameCard {
     SkillCard(CardDefinition definition) { super(definition); }
     @Override void resolve(BattleEngine engine, PlayerState owner, PlayerState opponent) {
-        if (definition.block() > 0 && (!definition.baseId().equals("Auto Shields") || owner.block == 0)) engine.cardBlock(owner, definition.block());
-        switch (definition.baseId()) {
+        if (definition.block() > 0 && (!definition.id().equals("Auto Shields") || owner.block == 0)) engine.cardBlock(owner, definition.block());
+        switch (definition.id()) {
             case "Shrug It Off", "Finesse" -> engine.draw(owner, 1);
             case "Backflip" -> engine.draw(owner, 2);
             case "Battle Trance" -> {
@@ -18,7 +18,7 @@ final class SkillCard extends GameCard {
             }
             case "Deadly Poison" -> engine.debuff(opponent, "Poison", definition.magic());
             case "Dodge and Roll" -> engine.buff(owner, "Next Turn Block", engine.modifiedBlock(owner, definition.block()));
-            case "Outmaneuver" -> engine.buff(owner, "Energized", definition.upgraded() ? 3 : 2);
+            case "Outmaneuver" -> engine.buff(owner, "Energized", 2);
             case "Conserve Battery" -> engine.buff(owner, "Energized", 1);
             case "Blur" -> engine.buff(owner, "Blur", 1);
             case "Zap" -> engine.channel(owner, opponent, OrbType.LIGHTNING);
@@ -28,11 +28,7 @@ final class SkillCard extends GameCard {
                 engine.channel(owner, opponent, OrbType.FROST);
             }
             case "Chill" -> engine.channel(owner, opponent, OrbType.FROST);
-            case "Darkness" -> {
-                engine.channel(owner, opponent, OrbType.DARK);
-                if (definition.upgraded()) for (OrbState orb : owner.orbs)
-                    if (orb.type == OrbType.DARK) engine.passiveOrb(owner, opponent, orb, false);
-            }
+            case "Darkness" -> engine.channel(owner, opponent, OrbType.DARK);
             case "Chaos" -> { for (int i = 0; i < definition.magic(); i++) engine.channel(owner, opponent, engine.randomOrb()); }
             case "Bandage Up" -> engine.heal(owner, definition.magic());
             case "Panacea" -> engine.buff(owner, "Artifact", definition.magic());
@@ -53,7 +49,7 @@ final class SkillCard extends GameCard {
             case "Rage" -> engine.buff(owner, "Rage", definition.magic());
             case "Leg Sweep" -> engine.debuff(opponent, "Weakened", definition.magic());
             case "Crippling Poison" -> { engine.debuff(opponent, "Poison", definition.magic()); engine.debuff(opponent, "Weakened", 2); }
-            case "Catalyst" -> engine.debuff(opponent, "Poison", opponent.power("Poison") * (definition.upgraded() ? 2 : 1));
+            case "Catalyst" -> engine.debuff(opponent, "Poison", opponent.power("Poison"));
             case "PiercingWail", "Dark Shackles" -> {
                 boolean artifact = opponent.power("Artifact") > 0;
                 engine.debuff(opponent, "Strength", -definition.magic());
@@ -80,12 +76,10 @@ final class SkillCard extends GameCard {
             }
             case "Fission" -> {
                 int count = owner.orbs.size();
-                if (definition.upgraded()) while (!owner.orbs.isEmpty() && !engine.isOver()) engine.evokeFirst(owner, opponent, 1);
-                else owner.orbs.clear();
+                owner.orbs.clear();
                 engine.gainEnergy(owner, count); engine.draw(owner, count);
             }
             case "Impatience" -> { if (owner.hand.stream().noneMatch(c -> c.definition().type() == CardType.ATTACK)) engine.draw(owner, definition.magic()); }
-            case "Apotheosis" -> engine.upgradeDeck(owner);
             default -> { }
         }
     }

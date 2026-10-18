@@ -38,7 +38,7 @@ public class BattleEngineTest {
         assertThrows(IllegalArgumentException.class, () -> game(Hero.IRONCLAD, deck("Unimplemented")));
     }
     @Test public void catalogContainsOnlySupportedSourceCardsAndExactStarterDecks() {
-        assertEquals(246, CardFactory.allCards().size());
+        assertEquals(122, CardFactory.allCards().size());
         for (Hero hero : Hero.values()) {
             assertEquals(15, CardFactory.starterDeck(hero).size());
             CardFactory.validateDeck(hero, CardFactory.starterDeck(hero));

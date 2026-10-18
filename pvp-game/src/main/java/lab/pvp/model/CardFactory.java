@@ -24,7 +24,10 @@ public final class CardFactory {
     }
     public static CardDefinition get(String id) {
         CardDefinition card = DEFINITIONS.get(id);
-        if (card == null) throw new IllegalArgumentException("Unknown or unsupported card: " + id);
+        if (card == null) throw new IllegalArgumentException(
+            id != null && id.endsWith("+")
+                ? "Card upgrades have been removed. Rebuild this deck with base cards: " + id
+                : "Unknown or unsupported card: " + id);
         return card;
     }
     public static List<String> starterDeck(Hero hero) {

@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | 行动队列 | `actions/GameActionManager.java`，`getNextAction()`、`callEndOfTurnActions()` | 先处理 `actions`，再 `preTurnActions`，再下一张 `cardQueue`。同批卡牌按顺序完成各自效果；不可将伤害、增益分别汇总后处理。 |
 | 出牌与费用 | `characters/AbstractPlayer.java`，`useCard()`（实际文件第 1472 行） | 结算时重新计算伤害，调用卡牌 `use()`，追加 `UseCardAction`，再消耗普通费用；不要重复扣费。 |
-| 卡牌抽象与工厂 | `cards/AbstractCard.java`、各 `cards/<color>/*.java` 的构造器、`use()`、`upgrade()`、`makeCopy()` | 卡名、费用、基础值、升级值与效果顺序逐卡核对；不能仅凭描述猜效果。 |
+| 卡牌抽象与工厂 | `cards/AbstractCard.java`、各 `cards/<color>/*.java` 的构造器、`use()`、`upgrade()`、`makeCopy()` | 卡名、费用、基础值与效果顺序逐卡核对；升级系统已按用户要求移除；不能仅凭描述猜效果。 |
 | 战斗牌堆 | `cards/CardGroup.java`，`initializeDeck()`、移动/洗牌方法 | 战斗复制卡组，与永久构筑分离；多张同名牌是不同实例，不应按卡牌 ID 去重。 |
 | 抽牌 | `actions/common/DrawCardAction.java`，`update()` | 手牌上限 10；抽牌堆耗尽才洗入弃牌堆；`No Draw` 会阻止抽牌。 |
 | 卡牌去向 | `actions/utility/UseCardAction.java`，`update()` | 普通卡入弃牌；带耗尽卡入耗尽；能力卡生效后移出牌堆循环，不能当作普通弃牌。 |
@@ -53,7 +53,7 @@
 - 球原始值：`orbs/Lightning.java` 回合末伤害 3、激发 8；`Frost.java` 回合末格挡 2、激发 5；`Dark.java` 初始激发 6，每回合末增长 6；`Plasma.java` 回合开始能量 1、激发能量 2。
 - `AbstractPlayer.channelOrb()` 在槽满时先激发最早的球、左移，再生成新球。集中加成适用于闪电、冰霜及黑暗增长，不应影响等离子能量。
 
-当前可选卡牌范围已核对为 **123 张基础卡与对应升级版（共 246 定义）**：红 42、绿 28、蓝 37、无色 16，具体清单见 [SUPPORTED_CARDS.md](src/main/resources/catalog/SUPPORTED_CARDS.md)。以上源码目录数量是参考总量，不是已实现数量；其他遗物、药水、战役及要求额外选牌交互的卡牌尚不在当前可玩版本内。
+当前可选卡牌范围已核对为 **122 张基础卡（无升级系统）**：红 42、绿 28、蓝 37、无色 15，具体清单见 [SUPPORTED_CARDS.md](src/main/resources/catalog/SUPPORTED_CARDS.md)。以上源码目录数量是参考总量，不是已实现数量；其他遗物、药水、战役及要求额外选牌交互的卡牌尚不在当前可玩版本内。
 
 ## 可复用素材
 
@@ -86,4 +86,8 @@
 
 ## 本轮验证
 
-61 个 JUnit 测试，新增独立源码预期覆盖升级值、抽牌、多段伤害、Artifact/负力量、临时力量、催化毒、格挡/反伤、能力触发、Buffer、Focus、Darkness/Fission/Recursion/Consume、Apotheosis 和反馈事件。另有所有 246 定义可执行检查；后者不是每个组合均正确的证明。GUI 实机点击验证三骨骼、原音频播放及完整 13 回合对局，截图与 JSON 在 output/final-feedback-smoke。没有运行原游戏作画面/声音同步对比，结果是本地源码对照和本地程序实测，不宣称与原版像素或全部时序完全一致。
+62 个 JUnit 测试，新增独立源码预期覆盖基础值、抽牌、多段伤害、Artifact/负力量、临时力量、催化毒、格挡/反伤、能力触发、Buffer、Focus、Darkness/Fission/Recursion/Consume 和反馈事件；升级卡导入与旧存档拒绝路径亦覆盖。另有所有 122 定义可执行检查；后者不是每个组合均正确的证明。GUI 实机点击验证三骨骼、原音频播放及完整 13 回合对局，截图与 JSON 在 output/final-feedback-smoke。没有运行原游戏作画面/声音同步对比，结果是本地源码对照和本地程序实测，不宣称与原版像素或全部时序完全一致。
+
+## 2026-10-13 范围调整
+
+用户明确取消卡牌升级系统。运行时不再提供 upgraded()/baseId()/upgrade()/upgradeDeck()，目录生成器只导出基础卡。Apotheosis 从可玩卡池移除；Catalyst、Fission、Darkness、Outmaneuver 等均使用未升级源码效果。旧升级卡数据保留，不做静默降级或删除，加载前校验并拒绝不再支持的 ID。原参考工程不作修改。

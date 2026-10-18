@@ -23,25 +23,24 @@ public class SourceParityTest {
     }
     private int power(BattleEngine b, int i, String key) { return p(b, i).powers().getOrDefault(key, 0); }
 
-    @Test public void upgradeNumbersAndFlagsMatchSource() {
-        assertEquals(9, CardFactory.get("Strike_R+").damage());
-        assertEquals(8, CardFactory.get("Defend_G+").block());
-        assertEquals(2, CardFactory.get("Pommel Strike+").magic());
-        assertEquals(5, CardFactory.get("Heavy Blade+").magic());
-        assertEquals(0, CardFactory.get("Zap+").cost());
-        assertEquals(0, CardFactory.get("Dualcast+").cost());
-        assertEquals(1, CardFactory.get("Apotheosis+").cost());
-        assertFalse(CardFactory.get("Limit Break+").exhaust());
-        assertTrue(CardFactory.get("Carnage").ethereal());
-        assertTrue(CardFactory.get("Chill+").innate());
-        for (CardDefinition card : CardFactory.allCards()) if (!card.upgraded()) assertNotNull(CardFactory.get(card.id() + "+"));
+    @Test public void catalogOnlyContainsBaseCardsAndRejectsRemovedUpgradeEffects() {
+        assertEquals(122, CardFactory.allCards().size());
+        assertTrue(CardFactory.allCards().stream().noneMatch(c -> c.id().endsWith("+") || c.name().endsWith("+")));
+        for (CardDefinition card : CardFactory.allCards())
+            assertThrows(IllegalArgumentException.class, () -> CardFactory.create(card.id() + "+"));
+        assertThrows(IllegalArgumentException.class, () -> CardFactory.get("Apotheosis"));
+        assertEquals(6, CardFactory.get("Strike_R").damage());
+        assertEquals(5, CardFactory.get("Defend_G").block());
+        assertEquals(1, CardFactory.get("Zap").cost());
+        assertTrue(CardFactory.get("Limit Break").exhaust());
+        assertFalse(CardFactory.get("Chill").innate());
     }
-    @Test public void upgradedPommelStrikeDrawsTwoAndAngerCopiesItsUpgrade() {
-        BattleEngine b = battle(Hero.IRONCLAD, "Pommel Strike+", "Anger+");
-        play(b, "Pommel Strike+"); play(b, "Anger+"); b.endTurn();
-        assertEquals(10 + 8, 80 - p(b, 1).hp());
-        assertTrue(b.snapshot().log().contains("Ironclad drew 2."));
-        assertEquals(8, p(b, 0).discardCount());
+    @Test public void basePommelStrikeDrawsOneAndAngerCopiesItsBaseCard() {
+        BattleEngine b = battle(Hero.IRONCLAD, "Pommel Strike", "Anger");
+        play(b, "Pommel Strike"); play(b, "Anger"); b.endTurn();
+        assertEquals(9 + 6, 80 - p(b, 1).hp());
+        assertTrue(b.snapshot().log().contains("Ironclad drew 1."));
+        assertEquals(7, p(b, 0).discardCount());
     }
     @Test public void pummelUsesFourStrengthScaledHitsAndExhausts() {
         BattleEngine b = battle(Hero.IRONCLAD, "Inflame", "Pummel");
@@ -49,12 +48,12 @@ public class SourceParityTest {
         assertEquals(64, p(b, 1).hp()); assertEquals(1, p(b, 0).exhaustCount());
     }
     @Test public void uppercutAppliesBothDebuffs() {
-        BattleEngine b = battle(Hero.IRONCLAD, "Uppercut+"); play(b, "Uppercut+"); b.endTurn();
-        assertEquals(67, p(b, 1).hp()); assertEquals(2, power(b, 1, "Weakened")); assertEquals(2, power(b, 1, "Vulnerable"));
+        BattleEngine b = battle(Hero.IRONCLAD, "Uppercut"); play(b, "Uppercut"); b.endTurn();
+        assertEquals(67, p(b, 1).hp()); assertEquals(1, power(b, 1, "Weakened")); assertEquals(1, power(b, 1, "Vulnerable"));
     }
     @Test public void flexExpiresAfterQueuedAttacks() {
-        BattleEngine b = battle(Hero.IRONCLAD, "Flex+", "Strike_R"); play(b, "Flex+"); play(b, "Strike_R"); b.endTurn();
-        assertEquals(70, p(b, 1).hp()); assertEquals(0, power(b, 0, "Strength"));
+        BattleEngine b = battle(Hero.IRONCLAD, "Flex", "Strike_R"); play(b, "Flex"); play(b, "Strike_R"); b.endTurn();
+        assertEquals(72, p(b, 1).hp()); assertEquals(0, power(b, 0, "Strength"));
     }
     @Test public void artifactBlocksStrengthReduction() {
         BattleEngine b = new BattleEngine(Hero.IRONCLAD, Collections.nCopies(15, "Panacea"), Hero.IRONCLAD, Collections.nCopies(15, "Disarm"), 1);
@@ -66,16 +65,17 @@ public class SourceParityTest {
         assertEquals(-6, power(b, 1, "Strength")); b.queueCard(0); b.endTurn();
         assertEquals(65, p(b, 0).hp()); assertEquals(0, power(b, 1, "Strength"));
     }
-    @Test public void catalystUpgradeTriplesPoisonBeforeItsTick() {
-        BattleEngine b = battle(Hero.SILENT, "Deadly Poison", "Catalyst+"); play(b, "Deadly Poison"); play(b, "Catalyst+"); b.endTurn();
-        assertEquals(65, p(b, 1).hp()); assertEquals(14, power(b, 1, "Poison"));
+    @Test public void baseCatalystDoublesPoisonBeforeItsTick() {
+        BattleEngine b = battle(Hero.SILENT, "Deadly Poison", "Catalyst"); play(b, "Deadly Poison"); play(b, "Catalyst"); b.endTurn();
+        assertEquals(70, p(b, 1).hp()); assertEquals(9, power(b, 1, "Poison"));
     }
     @Test public void unplayedCarnageFollowsUserDiscardOverride() {
         BattleEngine b = battle(Hero.IRONCLAD, "Carnage"); b.endTurn();
         assertEquals(0, p(b, 0).exhaustCount()); assertEquals(5, p(b, 0).discardCount());
     }
     @Test public void barricadePreservesBlockAtNextOwnerTurn() {
-        BattleEngine b = battle(Hero.IRONCLAD, "Barricade+"); play(b, "Barricade+"); play(b, "Defend_R"); b.endTurn(); b.endTurn();
+        BattleEngine b = battle(Hero.IRONCLAD, "Barricade"); play(b, "Barricade"); b.endTurn(); b.endTurn();
+        play(b, "Defend_R"); b.endTurn(); b.endTurn();
         assertEquals(5, p(b, 0).block());
     }
     @Test public void flameBarrierRetaliatesAndExpiresAtNextOwnerTurn() {
@@ -92,8 +92,8 @@ public class SourceParityTest {
         assertEquals(79, p(b, 0).hp()); assertEquals(75, p(b, 1).hp()); assertEquals(1, power(b, 0, "Strength"));
     }
     @Test public void feelNoPainTriggersOnExhaustAndDarkEmbraceDraws() {
-        BattleEngine b = battle(Hero.IRONCLAD, "Feel No Pain", "Dark Embrace+", "Intimidate");
-        play(b, "Feel No Pain"); play(b, "Dark Embrace+"); play(b, "Intimidate"); b.endTurn();
+        BattleEngine b = battle(Hero.IRONCLAD, "Feel No Pain", "Dark Embrace", "Intimidate");
+        play(b, "Feel No Pain"); play(b, "Dark Embrace"); play(b, "Intimidate"); b.endTurn();
         assertEquals(3, p(b, 0).block()); assertEquals(1, p(b, 0).exhaustCount()); assertEquals(0, p(b, 0).hand().size());
         assertTrue(b.snapshot().log().contains("Ironclad drew 1."));
     }
@@ -105,24 +105,20 @@ public class SourceParityTest {
         BattleEngine b = battle(Hero.DEFECT, "Buffer"); play(b, "Buffer"); b.endTurn(); b.queueCard(0); b.endTurn();
         assertEquals(70, p(b, 0).hp()); assertEquals(0, power(b, 0, "Buffer"));
     }
-    @Test public void darknessUpgradeTriggersAllDarkPassives() {
-        BattleEngine b = battle(Hero.DEFECT, "Darkness+"); play(b, "Darkness+"); b.endTurn();
-        assertTrue(p(b, 0).orbs().contains("Dark +6/18"));
+    @Test public void baseDarknessOnlyGrowsAtEndTurn() {
+        BattleEngine b = battle(Hero.DEFECT, "Darkness"); play(b, "Darkness"); b.endTurn();
+        assertTrue(p(b, 0).orbs().contains("Dark +6/12"));
     }
-    @Test public void fissionUpgradeEvokesStartingOrbAndRemovesAllOrbs() {
-        BattleEngine b = battle(Hero.DEFECT, "Fission+"); play(b, "Fission+"); b.endTurn();
-        assertEquals(72, p(b, 1).hp()); assertEquals(0, p(b, 0).orbs().size()); assertEquals(4, p(b, 0).energy());
+    @Test public void baseFissionRemovesOrbsWithoutEvoking() {
+        BattleEngine b = battle(Hero.DEFECT, "Fission"); play(b, "Fission"); b.endTurn();
+        assertEquals(80, p(b, 1).hp()); assertEquals(0, p(b, 0).orbs().size()); assertEquals(4, p(b, 0).energy());
     }
     @Test public void recursionRechannelsEvolvedOrbAndConsumeRemovesRightmostSlot() {
         BattleEngine b = battle(Hero.DEFECT, "Redo", "Consume"); play(b, "Redo"); play(b, "Consume"); b.endTurn();
         assertEquals(2, p(b, 0).orbSlots()); assertEquals(List.of("Lightning 5/10"), p(b, 0).orbs()); assertEquals(67, p(b, 1).hp());
     }
-    @Test public void apotheosisUpgradesQueuedCardsAndRemainingPiles() {
-        BattleEngine b = battle(Hero.IRONCLAD, "Apotheosis", "Strike_R"); play(b, "Apotheosis"); play(b, "Strike_R"); b.endTurn();
-        assertEquals(71, p(b, 1).hp()); b.endTurn(); assertTrue(p(b, 0).hand().stream().allMatch(CardDefinition::upgraded));
-    }
-    @Test public void outmaneuverUpgradeGrantsThreeNextTurnEnergy() {
-        BattleEngine b = battle(Hero.SILENT, "Outmaneuver+"); play(b, "Outmaneuver+"); b.endTurn(); b.endTurn(); assertEquals(6, p(b, 0).energy());
+    @Test public void baseOutmaneuverGrantsTwoNextTurnEnergy() {
+        BattleEngine b = battle(Hero.SILENT, "Outmaneuver"); play(b, "Outmaneuver"); b.endTurn(); b.endTurn(); assertEquals(5, p(b, 0).energy());
     }
     @Test public void eachCatalogCardActuallyResolvesWithoutMissingPowerCase() {
         for (CardDefinition card : CardFactory.allCards()) {
