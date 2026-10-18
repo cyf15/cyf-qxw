@@ -45,7 +45,7 @@ public final class GameApplication extends ApplicationAdapter {
     private CardDefinition resolvingCard;
     private int resolvingHit;
     private int visualDamageEvents, visualCardEvents;
-    private int viewPlayer, playbackQueueIndex, remainingQueued;
+    private int viewPlayer;
     private boolean resolving;
     private Map<String, com.google.gson.JsonObject> sourceEffects;
     private final Label[] hpLabels = new Label[2], statLabels = new Label[2], powerLabels = new Label[2];
@@ -551,7 +551,7 @@ public final class GameApplication extends ApplicationAdapter {
         BattleSnapshot snapshot = controller.battle().snapshot();
         if (snapshot.winner() >= 0) { showVictory(); return; }
         clear(Screen.BATTLE, true);
-        viewPlayer = snapshot.activePlayer(); playbackQueueIndex = 0; remainingQueued = snapshot.queue().size();
+        viewPlayer = snapshot.activePlayer();
         Table root = root();
         Table header = new Table();
         header.add(heading("THE ARENA")).left();
@@ -565,31 +565,7 @@ public final class GameApplication extends ApplicationAdapter {
         combatants.add(playerPanel(snapshot, 0)).growX().height(180).padRight(12);
         combatants.add(playerPanel(snapshot, 1)).growX().height(180);
         root.add(combatants).growX().padBottom(12).row();
-        Table queue = new Table();
-        queue.setBackground(assets.panel(new Color(.035f, .065f, .08f, .94f)));
-        queue.pad(12, 16, 12, 16);
-        Table queueText = new Table();
-        queueText.add(muted("RESOLUTION QUEUE")).left().row();
-        Label queuedCount = label(snapshot.queue().size() + " cards selected", "body"); queuedCount.setName("queue-count");
-        queueText.add(queuedCount).left().padTop(8).row();
-        queueText.add(muted("Resolves in selection order.")).left().padTop(4);
-        queue.add(queueText).width(227).left();
-        Table queuedCards = new Table();
-        queuedCards.left();
-        if (snapshot.queue().isEmpty()) queuedCards.add(muted("Select cards below, then end your turn to resolve their effects.")).left();
-        int queueTileIndex = 0;
-        for (CardDefinition card : snapshot.queue()) {
-            Table tile = new Table(); tile.setName("queue-tile-" + queueTileIndex++);
-            tile.setBackground(assets.panel("263431"));
-            tile.pad(6);
-            Image art = new Image(assets.art(card)); art.setScaling(Scaling.fit);
-            tile.add(art).size(48, 42).padRight(6);
-            Label name = muted(card.name()); name.setColor(GuiAssets.PAPER); name.setWrap(true);
-            tile.add(name).width(87);
-            queuedCards.add(tile).height(61).padRight(7);
-        }
-        queue.add(scroll(queuedCards, true)).growX().height(77);
-        root.add(queue).growX().height(109).padBottom(10).row();
+        root.add(muted("Play a card to resolve its effects immediately. Drawn cards and gained energy can be used this turn.")).growX().height(109).padBottom(10).row();
         PlayerSnapshot player = snapshot.players().get(snapshot.activePlayer());
         Table handHeader = new Table();
         handHeader.add(heading("YOUR HAND")).left();
@@ -606,9 +582,7 @@ public final class GameApplication extends ApplicationAdapter {
             CardDefinition card = player.hand().get(i);
             CardWidget widget = new CardWidget(assets, card, false, () -> safe(() -> {
                 audio.play("SOTE_SFX_CardSelect_v2.ogg");
-                controller.queueCard(cardIndex);
-                message = card.name() + " queued. Effects resolve when the turn ends.";
-                showBattle();
+                resolveAction(() -> controller.playCard(cardIndex));
             }));
             widget.setName("hand-" + i);
             if (card.cost() > player.energy()) widget.setColor(.58f, .58f, .58f, 1f);
@@ -616,23 +590,26 @@ public final class GameApplication extends ApplicationAdapter {
         }
         if (player.hand().isEmpty()) hand.add(label("No cards left in hand. End your turn when ready.", "body")).pad(30);
         root.add(scroll(hand, true)).growX().height(280).row();
-        Table bottom = footer("Click cards to queue them. Unplayed cards are discarded at the end of your turn.");
+        Table bottom = footer("Click a card to play it immediately. Unplayed cards are discarded at the end of your turn.");
         Label energy = heading(player.energy() + " ENERGY"); energy.setColor(GuiAssets.GOLD);
         bottom.add(energy).padLeft(15).padRight(25);
-        bottom.add(button("End turn  >", "end-turn", true, () -> {
-            int eventStart = controller.battle().combatEvents().size();
-            controller.endTurn();
-            List<CombatEvent> events = controller.battle().combatEvents();
-            for (CombatEvent event : events.subList(eventStart, events.size())) {
-                if (event.kind().equals("TURN")) break; // Incoming hand is revealed only after the privacy screen.
-                playback.add(event);
-            }
-            stage.getRoot().setTouchable(Touchable.disabled);
-            resolving = true; battleDirty = false; resolutionDelay = 0;
-            message = "";
-        })).width(185).height(53);
+        bottom.add(button("End turn  >", "end-turn", true, () -> safe(() -> resolveAction(controller::endTurn)))).width(185).height(53);
         root.add(bottom).growX().height(60).padTop(7);
         battleDirty = false;
+    }
+
+    private void resolveAction(Runnable action) {
+        if (resolving) return;
+        int eventStart = controller.battle().combatEvents().size();
+        action.run();
+        List<CombatEvent> events = controller.battle().combatEvents();
+        for (CombatEvent event : events.subList(eventStart, events.size())) {
+            if (event.kind().equals("TURN")) break; // Hide incoming hand until the privacy screen.
+            playback.add(event);
+        }
+        stage.getRoot().setTouchable(Touchable.disabled);
+        resolving = true; battleDirty = false; resolutionDelay = 0;
+        message = "";
     }
 
     private void floating(String text, int player, Color color) {
@@ -667,10 +644,6 @@ public final class GameApplication extends ApplicationAdapter {
         switch (event.kind()) {
             case "CARD" -> {
                 resolvingCard = event.card(); resolvingHit = 0; visualCardEvents++;
-                Actor tile = stage.getRoot().findActor("queue-tile-" + playbackQueueIndex++);
-                if (tile != null) tile.getColor().a = .2f;
-                Label count = stage.getRoot().findActor("queue-count");
-                if (count != null) count.setText(Math.max(0, --remainingQueued) + " cards remaining");
                 status.setText("Resolving " + resolvingCard.name());
                 CardWidget card = new CardWidget(assets, resolvingCard, false, () -> {});
                 card.setTouchable(Touchable.disabled); card.setBounds(565, 337, 140, 202); stage.addActor(card);
@@ -871,7 +844,9 @@ public final class GameApplication extends ApplicationAdapter {
                 else {
                     resolving = false;
                     stage.getRoot().setTouchable(Touchable.enabled);
-                    if (controller.battle().snapshot().winner() >= 0) showVictory(); else showPass();
+                    if (controller.battle().snapshot().winner() >= 0) showVictory();
+                    else if (controller.battle().snapshot().activePlayer() != viewPlayer) showPass();
+                    else showBattle();
                 }
             }
         } else if (battleDirty && screen == Screen.BATTLE) showBattle();
@@ -943,14 +918,14 @@ public final class GameApplication extends ApplicationAdapter {
             }
             case 12 -> {
                 BattleSnapshot snapshot = controller.battle().snapshot();
-                if (snapshot.queue().isEmpty() || snapshot.players().get(1).hp() != smokeFirstHp) throw new AssertionError("Queue did not defer card effects");
-                screenshot("gui-queued.png");
-                smokeEvidence.add("Selecting a hand card queued its effect without immediately damaging the opponent.");
+                if (snapshot.activePlayer() != 0 || screen != Screen.BATTLE || visualCardEvents != 1) throw new AssertionError("Immediate play did not resolve and return to the same player");
+                screenshot("gui-played.png");
+                smokeEvidence.add("A clicked card resolved immediately with feedback, then returned control to the same player.");
                 click("end-turn");
             }
             case 13 -> {
                 if (screen != Screen.PASS || controller.battle().snapshot().activePlayer() != 1) throw new AssertionError("Hotseat did not switch to Player 2");
-                smokeEvidence.add("Ending the turn resolved the queue and showed Player 2's privacy screen.");
+                smokeEvidence.add("Ending the turn showed Player 2's privacy screen.");
                 click("ready");
             }
             case 14 -> {

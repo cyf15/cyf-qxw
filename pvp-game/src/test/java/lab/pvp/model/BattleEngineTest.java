@@ -20,7 +20,7 @@ public class BattleEngineTest {
     private static PlayerSnapshot p(BattleEngine engine, int index) { return engine.snapshot().players().get(index); }
     private static void queue(BattleEngine engine, String id) {
         List<CardDefinition> hand = p(engine, engine.snapshot().activePlayer()).hand();
-        for (int i = 0; i < hand.size(); i++) if (hand.get(i).id().equals(id)) { engine.queueCard(i); return; }
+        for (int i = 0; i < hand.size(); i++) if (hand.get(i).id().equals(id)) { engine.playCard(i); return; }
         fail("Expected card in hand: " + id);
     }
     private static BattleEngine firstHand(Hero hero, List<String> deck, String... ids) {
@@ -62,12 +62,12 @@ public class BattleEngineTest {
         assertEquals(70, p(defect, 0).hp());
         assertEquals(List.of("Lightning 3/8"), p(defect, 0).orbs());
     }
-    @Test public void queueReservesEnergyButDefersDamageUntilEndTurn() {
+    @Test public void playSpendsEnergyAndResolvesBeforeEndTurn() {
         BattleEngine engine = game(Hero.IRONCLAD, deck("Strike_R"));
-        engine.queueCard(0);
+        engine.playCard(0);
         assertEquals(2, p(engine, 0).energy());
-        assertEquals(80, p(engine, 1).hp());
-        assertEquals(1, engine.snapshot().queue().size());
+        assertEquals(74, p(engine, 1).hp());
+        assertEquals(0, engine.snapshot().activePlayer());
         engine.endTurn();
         assertEquals(74, p(engine, 1).hp());
         assertEquals(1, engine.snapshot().activePlayer());
@@ -77,24 +77,24 @@ public class BattleEngineTest {
     }
     @Test public void invalidPlayDoesNotMutateAnySnapshotFieldOrNotify() {
         BattleEngine engine = game(Hero.IRONCLAD, deck("Bash"));
-        engine.queueCard(0);
+        engine.playCard(0);
         AtomicInteger notices = new AtomicInteger(); engine.addObserver(s -> notices.incrementAndGet());
         BattleSnapshot before = engine.snapshot();
-        assertThrows(IllegalArgumentException.class, () -> engine.queueCard(0));
+        assertThrows(IllegalArgumentException.class, () -> engine.playCard(0));
         assertEquals(before, engine.snapshot());
-        assertThrows(IllegalArgumentException.class, () -> engine.queueCard(-1));
+        assertThrows(IllegalArgumentException.class, () -> engine.playCard(-1));
         assertEquals(before, engine.snapshot());
         assertEquals(0, notices.get());
     }
     @Test public void blockProtectsAgainstOpponentThenExpiresOnOwnersNextTurn() {
         BattleEngine engine = new BattleEngine(Hero.IRONCLAD, deck("Defend_R"), Hero.IRONCLAD, deck("Strike_R"), 0);
-        engine.queueCard(0); assertEquals(0, p(engine, 0).block());
+        engine.playCard(0); assertEquals(5, p(engine, 0).block());
         engine.endTurn(); assertEquals(5, p(engine, 0).block());
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(79, p(engine, 0).hp());
         assertEquals(0, p(engine, 0).block());
     }
-    @Test public void queueOrderAppliesStrengthBeforeOnlySubsequentAttacks() {
+    @Test public void playOrderAppliesStrengthBeforeOnlySubsequentAttacks() {
         BattleEngine first = firstHand(Hero.IRONCLAD, mixed("Inflame", "Strike_R"), "Inflame", "Strike_R");
         queue(first, "Inflame"); queue(first, "Strike_R"); first.endTurn();
         assertEquals(72, p(first, 1).hp());
@@ -116,24 +116,24 @@ public class BattleEngineTest {
     }
     @Test public void weakLastsThroughAffectedPlayersTurnAndRoundsDown() {
         BattleEngine engine = new BattleEngine(Hero.SILENT, deck("Neutralize"), Hero.IRONCLAD, deck("Strike_R"), 0);
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(Integer.valueOf(1), p(engine, 1).powers().get("Weakened"));
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(61, p(engine, 0).hp());
         assertFalse(p(engine, 1).powers().containsKey("Weakened"));
     }
     @Test public void poisonBypassesBlockAndDecaysAtVictimsStart() {
         BattleEngine engine = new BattleEngine(Hero.SILENT, deck("Blur"), Hero.SILENT, deck("Deadly Poison"), 0);
-        engine.queueCard(0); engine.endTurn();
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(60, p(engine, 0).hp());
         assertEquals(5, p(engine, 0).block());
         assertEquals(Integer.valueOf(4), p(engine, 0).powers().get("Poison"));
     }
     @Test public void artifactConsumesAChargeInsteadOfApplyingDebuff() {
         BattleEngine engine = new BattleEngine(Hero.IRONCLAD, deck("Panacea"), Hero.SILENT, deck("Deadly Poison"), 0);
-        engine.queueCard(0); engine.endTurn();
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(80, p(engine, 0).hp());
         assertFalse(p(engine, 0).powers().containsKey("Poison"));
         assertFalse(p(engine, 0).powers().containsKey("Artifact"));
@@ -141,7 +141,7 @@ public class BattleEngineTest {
     }
     @Test public void blurPreservesBlockOnceBeforeItsDurationExpires() {
         BattleEngine engine = game(Hero.SILENT, deck("Blur"));
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(5, p(engine, 0).block());
         engine.endTurn();
         assertEquals(5, p(engine, 0).block());
@@ -151,28 +151,28 @@ public class BattleEngineTest {
     }
     @Test public void nextTurnEnergyAndBlockAreAppliedToTheirOwner() {
         BattleEngine engine = game(Hero.SILENT, deck("Outmaneuver"));
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(3, p(engine, 1).energy());
         engine.endTurn(); assertEquals(5, p(engine, 0).energy());
         BattleEngine roll = game(Hero.SILENT, deck("Dodge and Roll"));
-        roll.queueCard(0); roll.endTurn(); roll.endTurn();
+        roll.playCard(0); roll.endTurn(); roll.endTurn();
         assertEquals(4, p(roll, 0).block());
     }
-    @Test public void drawAndEnergyEffectsRespectDeferredResolution() {
+    @Test public void drawAndEnergyEffectsResolveImmediately() {
         BattleEngine engine = game(Hero.IRONCLAD, deck("Pommel Strike"));
-        engine.queueCard(0);
-        assertEquals(10, p(engine, 0).drawCount());
+        engine.playCard(0);
+        assertEquals(9, p(engine, 0).drawCount());
         engine.endTurn();
         assertEquals(9, p(engine, 0).drawCount());
         assertEquals(6, p(engine, 0).discardCount());
         assertEquals(0, p(engine, 0).hand().size());
         BattleEngine energy = game(Hero.IRONCLAD, deck("Seeing Red"));
-        energy.queueCard(0); assertEquals(2, p(energy, 0).energy());
+        energy.playCard(0); assertEquals(4, p(energy, 0).energy());
         energy.endTurn(); assertEquals(4, p(energy, 0).energy());
         assertEquals(1, p(energy, 0).exhaustCount());
         energy.endTurn(); assertEquals(3, p(energy, 0).energy());
     }
-    @Test public void noDrawPowerStopsLaterDrawActionsInTheSameBatch() {
+    @Test public void noDrawPowerStopsLaterDrawActionsInTheSameTurn() {
         BattleEngine engine = firstHand(Hero.IRONCLAD, mixed("Battle Trance", "Pommel Strike"), "Battle Trance", "Pommel Strike");
         queue(engine, "Battle Trance"); queue(engine, "Pommel Strike"); engine.endTurn();
         assertEquals(7, p(engine, 0).drawCount());
@@ -180,40 +180,40 @@ public class BattleEngineTest {
     }
     @Test public void exhaustedCardsNeverShuffleBackButAngerAddsCopies() {
         BattleEngine engine = game(Hero.IRONCLAD, deck("Impervious"));
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(30, p(engine, 0).block());
         assertEquals(1, p(engine, 0).exhaustCount());
         for (int i = 0; i < 12; i++) engine.endTurn();
         PlayerSnapshot state = p(engine, 0);
         assertEquals(14, state.hand().size() + state.drawCount() + state.discardCount());
         BattleEngine anger = game(Hero.IRONCLAD, deck("Anger"));
-        anger.queueCard(0); anger.endTurn();
+        anger.playCard(0); anger.endTurn();
         assertEquals(6, p(anger, 0).discardCount());
     }
     @Test public void orbsChannelPassivelyTriggerEvokeAndRespectFocus() {
         BattleEngine dual = game(Hero.DEFECT, deck("Dualcast"));
-        dual.queueCard(0); dual.endTurn();
+        dual.playCard(0); dual.endTurn();
         assertEquals(64, p(dual, 1).hp());
         assertTrue(p(dual, 0).orbs().isEmpty());
         BattleEngine frost = game(Hero.DEFECT, deck("Glacier"));
-        frost.queueCard(0); frost.endTurn();
+        frost.playCard(0); frost.endTurn();
         assertEquals(11, p(frost, 0).block());
         assertEquals(3, p(frost, 0).orbs().size());
         assertEquals(77, p(frost, 1).hp());
         BattleEngine focus = game(Hero.DEFECT, deck("Defragment"));
-        focus.queueCard(0); focus.endTurn();
+        focus.playCard(0); focus.endTurn();
         assertEquals(76, p(focus, 1).hp());
         assertEquals(List.of("Lightning 4/9"), p(focus, 0).orbs());
     }
     @Test public void overflowEvokesOldestOrbBeforeChannelingNewOne() {
         BattleEngine engine = game(Hero.DEFECT, deck("Zap"));
-        engine.queueCard(0); engine.queueCard(0); engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.playCard(0); engine.playCard(0); engine.endTurn();
         assertEquals(3, p(engine, 0).orbs().size());
         assertEquals(63, p(engine, 1).hp()); // 8 evoke + 3*3 passive.
     }
     @Test public void darkOrbStoresDamageAndInnateCardsRespectTenCardHandLimit() {
         BattleEngine engine = game(Hero.DEFECT, deck("Darkness"));
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertTrue(p(engine, 0).orbs().contains("Dark +6/12"));
         BattleEngine innate = game(Hero.IRONCLAD, deck("Dramatic Entrance"));
         assertEquals(10, p(innate, 0).hand().size());
@@ -248,32 +248,32 @@ public class BattleEngineTest {
     }
     @Test public void noxiousFumesTicksOnOwnersStartAndPoisonCanWinBeforeDraw() {
         BattleEngine fumes = game(Hero.SILENT, deck("Noxious Fumes"));
-        fumes.queueCard(0); fumes.endTurn();
+        fumes.playCard(0); fumes.endTurn();
         assertFalse(p(fumes, 1).powers().containsKey("Poison"));
         fumes.endTurn();
         assertEquals(Integer.valueOf(2), p(fumes, 1).powers().get("Poison"));
         BattleEngine poison = new BattleEngine(Hero.SILENT, deck("Deadly Poison"), Hero.IRONCLAD, deck("Defend_R"), 0);
         for (int i = 0; i < 20 && poison.snapshot().winner() == -1; i++) {
             if (poison.snapshot().activePlayer() == 0)
-                for (int j = 0; j < 3; j++) poison.queueCard(0);
+                for (int j = 0; j < 3; j++) poison.playCard(0);
             poison.endTurn();
         }
         assertEquals(0, poison.snapshot().winner());
         assertEquals(0, p(poison, 1).hp());
         assertTrue(p(poison, 1).hand().isEmpty());
     }
-    @Test public void lethalDamageClampsHpStopsQueueAndPreventsFuturePlay() {
+    @Test public void lethalDamageClampsHpStopsFurtherPlayAndPreventsFuturePlay() {
         BattleEngine engine = new BattleEngine(Hero.IRONCLAD, deck("Anger"), Hero.SILENT, deck("Defend_G"), 3);
         int turns = 0;
         while (engine.snapshot().winner() == -1 && turns++ < 20) {
             if (engine.snapshot().activePlayer() == 0)
-                while (!p(engine, 0).hand().isEmpty()) engine.queueCard(0);
-            engine.endTurn();
+                while (engine.snapshot().winner() < 0 && !p(engine, 0).hand().isEmpty()) engine.playCard(0);
+            if (engine.snapshot().winner() < 0) engine.endTurn();
         }
         assertEquals(0, engine.snapshot().winner());
         assertEquals(0, p(engine, 1).hp());
         BattleSnapshot done = engine.snapshot();
-        assertThrows(IllegalStateException.class, () -> engine.queueCard(0));
+        assertThrows(IllegalStateException.class, () -> engine.playCard(0));
         assertThrows(IllegalStateException.class, engine::endTurn);
         assertEquals(done, engine.snapshot());
     }
@@ -285,9 +285,42 @@ public class BattleEngineTest {
         assertThrows(UnsupportedOperationException.class, () -> before.players().clear());
         assertThrows(UnsupportedOperationException.class, () -> before.players().get(0).hand().clear());
         assertThrows(UnsupportedOperationException.class, () -> before.players().get(0).powers().clear());
-        engine.queueCard(0); engine.endTurn();
+        engine.playCard(0); engine.endTurn();
         assertEquals(2, notices.get());
         assertEquals(5, before.players().get(0).hand().size());
         assertEquals(80, before.players().get(1).hp());
+    }
+
+    @Test public void newlyDrawnCardsCanBePlayedBeforeEndingTurn() {
+        BattleEngine b = game(Hero.IRONCLAD, deck("Pommel Strike"));
+        b.playCard(0);
+        assertEquals(5, p(b, 0).hand().size());
+        b.playCard(4); // This slot is the card just drawn by Pommel Strike.
+        assertEquals(62, p(b, 1).hp());
+        assertEquals(1, p(b, 0).energy());
+        assertEquals(0, b.snapshot().activePlayer());
+        assertEquals(1, b.snapshot().turnNumber());
+    }
+    @Test public void gainedEnergyEnablesPreviouslyUnaffordableCardImmediately() {
+        List<String> cards = new ArrayList<>(deck("Bash")); cards.set(0, "Seeing Red");
+        BattleEngine b = firstHand(Hero.IRONCLAD, cards, "Seeing Red", "Bash");
+        queue(b, "Bash");
+        assertEquals(1, p(b, 0).energy());
+        queue(b, "Seeing Red");
+        assertEquals(2, p(b, 0).energy());
+        queue(b, "Bash");
+        assertEquals(0, p(b, 0).energy());
+        assertEquals(60, p(b, 1).hp());
+        assertEquals(0, b.snapshot().activePlayer());
+    }
+    @Test public void endTurnDoesNotReplayCardsAndOnlyThenTriggersPassiveOrbs() {
+        BattleEngine b = game(Hero.DEFECT, deck("Strike_B"));
+        b.playCard(0);
+        assertEquals(74, p(b, 1).hp());
+        long cards = b.combatEvents().stream().filter(e -> e.kind().equals("CARD")).count();
+        b.endTurn();
+        assertEquals(71, p(b, 1).hp());
+        assertEquals(cards, b.combatEvents().stream().filter(e -> e.kind().equals("CARD")).count());
+        assertEquals(1, b.snapshot().activePlayer());
     }
 }

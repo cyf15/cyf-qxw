@@ -8,13 +8,12 @@ import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Shared CUI/GUI engine. Source actions resolve sequentially at the user's end-turn
- * boundary; selecting a card reserves its energy immediately. No rendering dependency.
+ * Shared CUI/GUI engine. Each played card resolves completely before the next
+ * player action; ending the turn only runs end-turn hooks and passes control. No rendering dependency.
  */
 public final class BattleEngine {
     private final PlayerState[] players;
     private final Random random;
-    private final List<GameCard> queue = new ArrayList<>();
     private final List<String> log = new ArrayList<>();
     private final List<CombatEvent> combatEvents = new ArrayList<>();
     private final List<GameObserver> observers = new CopyOnWriteArrayList<>();
@@ -41,7 +40,7 @@ public final class BattleEngine {
             if (player.hero == Hero.DEFECT) player.orbs.add(new OrbState(OrbType.LIGHTNING));
         }
         event("Local hotseat: P1 " + hero1.displayName() + " versus P2 " + hero2.displayName() + ".");
-        event("Select cards to spend energy; effects resolve in selection order on End turn.");
+        event("Play a card to spend energy and resolve its effects immediately.");
         event("Starting relics active: Burning Blood, Ring of the Snake, or Cracked Core for each hero.");
         startTurn();
     }
@@ -49,7 +48,7 @@ public final class BattleEngine {
     public synchronized BattleSnapshot snapshot() {
         return new BattleSnapshot(turnNumber, activePlayer, winner,
                 List.of(players[0].snapshot(), players[1].snapshot()),
-                queue.stream().map(GameCard::definition).toList(), log);
+                log);
     }
     /** Original draw-pile viewer sorts cards, so inspecting it never reveals future draw order. */
     public synchronized List<CardDefinition> inspectPile(String pile) {
@@ -69,7 +68,7 @@ public final class BattleEngine {
     public void addObserver(GameObserver observer) { observers.add(Objects.requireNonNull(observer, "observer")); }
     public void removeObserver(GameObserver observer) { observers.remove(observer); }
 
-    public synchronized void queueCard(int handIndex) {
+    public synchronized void playCard(int handIndex) {
         requireActive();
         PlayerState player = players[activePlayer];
         if (handIndex < 0 || handIndex >= player.hand.size()) throw new IllegalArgumentException("Choose a card in your hand.");
@@ -77,8 +76,26 @@ public final class BattleEngine {
         if (card.definition().cost() > player.energy) throw new IllegalArgumentException("Not enough energy for " + card.definition().name() + ".");
         player.energy -= card.definition().cost();
         player.hand.remove(handIndex);
-        queue.add(card);
-        event("P" + (activePlayer + 1) + " queued " + card.definition().name() + " (" + card.definition().cost() + " energy).");
+        PlayerState owner = player;
+        PlayerState opponent = players[1 - activePlayer];
+        event("Resolve " + card.definition().name() + ".");
+        visual("CARD", owner, owner, card.definition().name(), 0, 0, card.definition());
+        int afterImage = owner.power("After Image"), cuts = owner.power("A Thousand Cuts"),
+            rage = owner.power("Rage"), heatsinks = owner.power("Heatsinks"), storm = owner.power("Storm"), panache = owner.power("Panache");
+        card.resolve(this, owner, opponent);
+        rawBlock(owner, afterImage);
+        damage(opponent, cuts, false);
+        if (card.definition().type() == CardType.ATTACK) rawBlock(owner, rage);
+        if (card.definition().type() == CardType.POWER) {
+            draw(owner, heatsinks);
+            for (int i = 0; i < storm; i++) channel(owner, opponent, OrbType.LIGHTNING);
+        }
+        if (panache > 0) {
+            owner.setPower("Panache Counter", owner.power("Panache Counter") + 1);
+            if (owner.power("Panache Counter") == 5) { damage(opponent, panache, false); owner.setPower("Panache Counter", 0); }
+        }
+        if (card.definition().exhaust()) exhaust(owner, card);
+        else if (!card.leavesDeckAfterPlay()) discard(owner, card, true);
         notifyObservers();
     }
 
@@ -86,27 +103,6 @@ public final class BattleEngine {
         requireActive();
         PlayerState owner = players[activePlayer];
         PlayerState opponent = players[1 - activePlayer];
-        while (!queue.isEmpty() && !isOver()) {
-            GameCard card = queue.remove(0);
-            event("Resolve " + card.definition().name() + ".");
-            visual("CARD", owner, owner, card.definition().name(), 0, 0, card.definition());
-            int afterImage = owner.power("After Image"), cuts = owner.power("A Thousand Cuts"),
-                rage = owner.power("Rage"), heatsinks = owner.power("Heatsinks"), storm = owner.power("Storm"), panache = owner.power("Panache");
-            card.resolve(this, owner, opponent);
-            rawBlock(owner, afterImage);
-            damage(opponent, cuts, false);
-            if (card.definition().type() == CardType.ATTACK) rawBlock(owner, rage);
-            if (card.definition().type() == CardType.POWER) {
-                draw(owner, heatsinks);
-                for (int i = 0; i < storm; i++) channel(owner, opponent, OrbType.LIGHTNING);
-            }
-            if (panache > 0) {
-                owner.setPower("Panache Counter", owner.power("Panache Counter") + 1);
-                if (owner.power("Panache Counter") == 5) { damage(opponent, panache, false); owner.setPower("Panache Counter", 0); }
-            }
-            if (card.definition().exhaust()) exhaust(owner, card);
-            else if (!card.leavesDeckAfterPlay()) discard(owner, card, true);
-        }
         if (!isOver()) {
             // Metallicize's pre-card hook, then source orb end-turn hooks.
             rawBlock(owner, owner.power("Metallicize"));
@@ -119,9 +115,6 @@ public final class BattleEngine {
             if (owner.power("Wraith Form") > 0) debuff(owner, "Dexterity", -owner.power("Wraith Form"));
 
         }
-        // Unresolved cards have no effects after lethal damage. Finish pile cleanup only.
-        owner.discard.addAll(queue);
-        queue.clear();
         for (GameCard card : List.copyOf(owner.hand)) {
             owner.hand.remove(card);
             // User override: every unplayed card is discarded, including source Ethereal cards.

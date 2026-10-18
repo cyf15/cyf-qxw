@@ -18,7 +18,7 @@ public class SourceParityTest {
     private PlayerSnapshot p(BattleEngine b, int i) { return b.snapshot().players().get(i); }
     private void play(BattleEngine b, String id) {
         var hand = p(b, b.snapshot().activePlayer()).hand();
-        for (int i = 0; i < hand.size(); i++) if (hand.get(i).id().equals(id)) { b.queueCard(i); return; }
+        for (int i = 0; i < hand.size(); i++) if (hand.get(i).id().equals(id)) { b.playCard(i); return; }
         fail("Missing " + id);
     }
     private int power(BattleEngine b, int i, String key) { return p(b, i).powers().getOrDefault(key, 0); }
@@ -57,12 +57,12 @@ public class SourceParityTest {
     }
     @Test public void artifactBlocksStrengthReduction() {
         BattleEngine b = new BattleEngine(Hero.IRONCLAD, Collections.nCopies(15, "Panacea"), Hero.IRONCLAD, Collections.nCopies(15, "Disarm"), 1);
-        b.queueCard(0); b.endTurn(); b.queueCard(0); b.endTurn();
+        b.playCard(0); b.endTurn(); b.playCard(0); b.endTurn();
         assertEquals(0, power(b, 0, "Artifact")); assertEquals(0, power(b, 0, "Strength"));
     }
     @Test public void piercingWailRestoresStrengthAfterAffectedPlayersTurn() {
         BattleEngine b = battle(Hero.SILENT, "PiercingWail"); play(b, "PiercingWail"); b.endTurn();
-        assertEquals(-6, power(b, 1, "Strength")); b.queueCard(0); b.endTurn();
+        assertEquals(-6, power(b, 1, "Strength")); b.playCard(0); b.endTurn();
         assertEquals(65, p(b, 0).hp()); assertEquals(0, power(b, 1, "Strength"));
     }
     @Test public void baseCatalystDoublesPoisonBeforeItsTick() {
@@ -80,7 +80,7 @@ public class SourceParityTest {
     }
     @Test public void flameBarrierRetaliatesAndExpiresAtNextOwnerTurn() {
         BattleEngine b = battle(Hero.IRONCLAD, "Flame Barrier"); play(b, "Flame Barrier"); b.endTurn();
-        b.queueCard(0); b.queueCard(0); b.endTurn();
+        b.playCard(0); b.playCard(0); b.endTurn();
         assertEquals(80, p(b, 0).hp()); assertEquals(72, p(b, 1).hp()); assertEquals(0, power(b, 0, "Flame Barrier"));
     }
     @Test public void juggernautTriggersOnRawBlockGain() {
@@ -102,7 +102,7 @@ public class SourceParityTest {
         assertEquals(3, power(b, 0, "Focus"));
     }
     @Test public void bufferPreventsHpLossButConsumesOnlyAfterBlock() {
-        BattleEngine b = battle(Hero.DEFECT, "Buffer"); play(b, "Buffer"); b.endTurn(); b.queueCard(0); b.endTurn();
+        BattleEngine b = battle(Hero.DEFECT, "Buffer"); play(b, "Buffer"); b.endTurn(); b.playCard(0); b.endTurn();
         assertEquals(70, p(b, 0).hp()); assertEquals(0, power(b, 0, "Buffer"));
     }
     @Test public void baseDarknessOnlyGrowsAtEndTurn() {
@@ -124,14 +124,14 @@ public class SourceParityTest {
         for (CardDefinition card : CardFactory.allCards()) {
             Hero hero = card.hero() == null ? Hero.IRONCLAD : card.hero();
             BattleEngine b = new BattleEngine(hero, Collections.nCopies(15, card.id()), Hero.IRONCLAD, Collections.nCopies(15, "Defend_R"), 0);
-            if (card.cost() <= 3) { b.queueCard(0); b.endTurn(); }
+            if (card.cost() <= 3) { b.playCard(0); b.endTurn(); }
         }
     }
-    @Test public void feedbackEventsUseEachResolvedHitAndNeverFireDuringSelection() {
+    @Test public void feedbackEventsImmediatelyIncludeEveryResolvedHit() {
         BattleEngine b = battle(Hero.IRONCLAD, "Pummel");
         int before = b.combatEvents().size(); play(b, "Pummel");
-        assertEquals(before, b.combatEvents().size());
-        b.endTurn();
+        assertTrue(b.combatEvents().size() > before);
+        assertEquals(0, b.snapshot().activePlayer());
         var events = b.combatEvents().subList(before, b.combatEvents().size());
         var hits = events.stream().filter(e -> e.kind().equals("DAMAGE")).toList();
         assertEquals(4, hits.size());

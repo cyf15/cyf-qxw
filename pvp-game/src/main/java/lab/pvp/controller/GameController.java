@@ -43,7 +43,7 @@ public final class GameController implements AutoCloseable {
         persistenceWarning = "";
         battle.addObserver(this::recordFinishedMatch);
     }
-    public void queueCard(int index) { battle().queueCard(index); }
+    public void playCard(int index) { battle().playCard(index); }
     public void endTurn() { battle().endTurn(); }
     public String persistenceWarning() { return persistenceWarning; }
 

@@ -82,7 +82,7 @@ public final class ConsoleLauncher {
         }
     }
     private void battle() {
-        System.out.println("Select cards to queue them. Effects resolve when you end the turn.");
+        System.out.println("Play one card at a time. All its effects resolve immediately; then you may play again.");
         while (true) {
             BattleSnapshot state = controller.battle().snapshot();
             System.out.println("Recent actions:");
@@ -100,15 +100,14 @@ public final class ConsoleLauncher {
             PlayerSnapshot active = state.players().get(state.activePlayer());
             System.out.println("Turn " + state.turnNumber() + " | PLAYER " + (state.activePlayer() + 1) + " | draw " + active.drawCount() + " / discard " + active.discardCount());
             for (int i = 0; i < active.hand().size(); i++) { CardDefinition c = active.hand().get(i); System.out.println((i + 1) + ". " + c.name() + " (" + c.cost() + ") " + c.description()); }
-            System.out.println("Queued: " + state.queue().stream().map(CardDefinition::name).toList());
-            System.out.println("Card number to queue | end | quit (abandon match)");
+            System.out.println("Card number to play | end | quit (abandon match)");
             String raw = line();
             if (raw == null || raw.equalsIgnoreCase("quit")) return;
             try {
                 if (raw.equalsIgnoreCase("end")) {
                     controller.endTurn();
                     if (controller.battle().snapshot().winner() < 0) { System.out.print("\n".repeat(30)); System.out.println("Pass to PLAYER " + (controller.battle().snapshot().activePlayer() + 1) + ". Press Enter when ready."); if (line() == null) return; }
-                } else controller.queueCard(parse(raw, 1, active.hand().size()) - 1);
+                } else controller.playCard(parse(raw, 1, active.hand().size()) - 1);
             } catch (RuntimeException e) { System.out.println(e.getMessage()); }
         }
     }

@@ -52,8 +52,8 @@ public class GameControllerTest {
             List<String> deck = Collections.nCopies(15, "Strike_R");
             c.startMatch(Hero.IRONCLAD, deck, Hero.IRONCLAD, deck, 42L);
             for (int n = 0; n < 50 && c.battle().snapshot().winner() < 0; n++) {
-                while (c.battle().snapshot().players().get(c.battle().snapshot().activePlayer()).energy() > 0) c.queueCard(0);
-                c.endTurn();
+                while (c.battle().snapshot().winner() < 0 && c.battle().snapshot().players().get(c.battle().snapshot().activePlayer()).energy() > 0) c.playCard(0);
+                if (c.battle().snapshot().winner() < 0) c.endTurn();
             }
             assertTrue(c.battle().snapshot().winner() >= 0);
             assertEquals(1, c.history().size());
