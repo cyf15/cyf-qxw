@@ -18,10 +18,10 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-          cache-dependency-path: pvp-game/pom.xml
+          cache-dependency-path: 'aut lab/pvp-game/pom.xml'
       - name: Build, test and package
         shell: pwsh
-        run: ./pvp-game/scripts/package-windows.ps1
+        run: '& ''./aut lab/pvp-game/scripts/package-windows.ps1'''
       - name: Publish portable download
         shell: pwsh
         env:
@@ -29,9 +29,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $zip = Get-ChildItem pvp-game/output/portable-*/SpireDuel-Windows-x64.zip | Select-Object -First 1
+          $zip = Get-ChildItem 'aut lab/pvp-game/output/portable-*/SpireDuel-Windows-x64.zip' | Select-Object -First 1
           if (-not $zip) { throw 'Portable ZIP missing' }
-          $projectZip = Get-ChildItem pvp-game/output/portable-*/aut-lab-Windows-x64.zip | Select-Object -First 1
+          $projectZip = Get-ChildItem 'aut lab/pvp-game/output/portable-*/aut-lab-Windows-x64.zip' | Select-Object -First 1
           if (-not $projectZip) { throw 'Complete project ZIP missing' }
           $tag = 'windows-portable-' + $env:GITHUB_SHA.Substring(0, 7)
           $notes = @"

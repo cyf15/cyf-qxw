@@ -25,7 +25,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File pvp-game/scripts/package-win
 
 ```powershell
 git clone --recurse-submodules https://github.com/cyf15/cyf-qxw.git
-cd cyf-qxw
+cd "cyf-qxw/aut lab"
 ```
 
 如果已普通克隆，可补拉子模块：
