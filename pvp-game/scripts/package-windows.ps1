@@ -43,7 +43,8 @@ Bundled Java license notices: runtime/legal/.
 '@
     [IO.File]::WriteAllText((Join-Path $game '使用说明.txt'), $readme, [Text.UTF8Encoding]::new($true))
     $zip = Join-Path $release 'SpireDuel-Windows-x64.zip'
-    Compress-Archive -LiteralPath $game -DestinationPath $zip
+    # Put the EXE at the extraction root so extracting into aut lab gives aut lab/SpireDuel.exe.
+    Compress-Archive -Path (Join-Path $game '*') -DestinationPath $zip
     Get-FileHash $zip -Algorithm SHA256 | Format-List
     Write-Host "Portable folder: $game"
     Write-Host "Download package: $zip"

@@ -11,6 +11,8 @@ Java + libGDX 的同机双人卡牌对战项目。当前开发平台为 Windows�
 
 开发者在已安装 Windows x64 JDK 17+ 的电脑上生成免安装包：
 
+游戏包中的 `SpireDuel.exe`、`app/` 和 `runtime/` 位于压缩包根目录。将游戏包解压到 `G:\aut lab`，即可直接运行 `G:\aut lab\SpireDuel.exe`；其他电脑可以选择自己的目录。运行文件通过 Release 完整交付，本地复制的 EXE、依赖和 Java 不重复提交到源码仓库。正常游玩无需 CMD。
+
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File pvp-game/scripts/package-windows.ps1
 ```
