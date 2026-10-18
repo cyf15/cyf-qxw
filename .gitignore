@@ -1,0 +1,10 @@
+**/target/
+**/data/
+**/output/
+*.log
+*.tmp
+__pycache__/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
