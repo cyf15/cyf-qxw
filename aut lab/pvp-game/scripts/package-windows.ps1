@@ -51,7 +51,7 @@ Bundled Java license notices: runtime/legal/.
     $wholeProject = Join-Path $submission 'aut lab'
     New-Item -ItemType Directory -Path $wholeProject -Force | Out-Null
     foreach ($repoRelative in @('', 'MySlayTheSpire')) {
-        $repo = Join-Path $workspace $repoRelative
+        $repo = (Join-Path $workspace $repoRelative).TrimEnd([char]92, [char]47)
         $tracked = & git -C $repo -c core.quotepath=false ls-files
         if ($LASTEXITCODE -ne 0) { throw 'Could not enumerate project source files.' }
         foreach ($file in $tracked) {
