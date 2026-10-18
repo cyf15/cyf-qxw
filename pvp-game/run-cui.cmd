@@ -1,8 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist "target\spire-hotseat.jar" (
-  call mvnw.cmd -B package
-  if errorlevel 1 exit /b 1
-)
-java -cp "target\spire-hotseat.jar;target\lib\*" lab.pvp.view.cui.ConsoleLauncher
+echo Building current source for the CUI...
+call mvnw.cmd -B -q package -DskipTests -Dpvp.buildDir=output/cmd-build
+if errorlevel 1 exit /b 1
+java -Dpvp.dataDir=data/cui-demo -cp "output/cmd-build/spire-hotseat.jar;output/cmd-build/lib/*" lab.pvp.view.cui.ConsoleLauncher

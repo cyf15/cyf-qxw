@@ -72,3 +72,9 @@ java -Dpvp.smoke=true -Dpvp.dataDir=output/gui-test-data -jar target/spire-hotse
 测试通过实际 Scene2D 按钮事件从菜单打到胜负，输出 `output/gui-smoke.json` 及各页面截图。测试存档与正式 `data/` 分开。CUI 流程证据在 `output/cui-smoke.txt`。
 
 Project 1/2 提交材料独立维护在上一层 `提交材料清单.md`，后续再整理。
+
+## Project 1 CMD demonstration
+
+Run `../commandLineStart.cmd`: option 1 builds current source and launches the CUI; option 2 runs JUnit with visible Maven results. The CMD launcher uses separate persistent data in `data/cui-demo` so an older game does not lock the demo database; existing `data/hotseat.mv.db` is untouched. CUI builds use `output/cmd-build` to avoid an older running game locking `target`. The remote baseline is retained: 15-card decks, immediate card resolution and H2 persistence. Quick demo uses normal starter decks and fixed seed 42; both players remain human-controlled. Deck construction displays all slots in two columns. `pool PAGE` lists five entries with stable IDs. Battle commands include `draw`, `discard`, `exhaust`, `log`, and confirmed `concede`; a concession saves a real result and is not a demonstration of zero-HP defeat.
+
+Suggested video: show passing tests; construct and save a starter deck, clear and reload it, export JSON; start a match or choose Quick demo; play cards and show immediate HP/block/energy changes; show rejection of an invalid index or an unaffordable card; inspect piles and end the turn; finish normally or demonstrate a clearly labelled concession, then inspect match history. Explain MVC, polymorphism, DAO and actual AI involvement. Keep the video within five minutes. No video has been recorded by these commands.

@@ -31,9 +31,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $zip = Get-ChildItem pvp-game/output/portable-*/SpireDuel-Windows-x64.zip | Select-Object -First 1
           if (-not $zip) { throw 'Portable ZIP missing' }
+          $projectZip = Get-ChildItem pvp-game/output/portable-*/aut-lab-Windows-x64.zip | Select-Object -First 1
+          if (-not $projectZip) { throw 'Complete project ZIP missing' }
           $tag = 'windows-portable-' + $env:GITHUB_SHA.Substring(0, 7)
           $notes = @"
           Windows 10/11 x64 portable edition. Extract the whole SpireDuel-Windows-x64.zip, then double-click SpireDuel.exe.
+          For the complete aut lab folder including source, reference assets and the ready-to-run EXE, download aut-lab-Windows-x64.zip. Extract and open aut lab/SpireDuel.exe.
           SpireDuel.exe, app/ and runtime/ are directly at the extraction root. Extract into aut lab to launch aut lab/SpireDuel.exe.
           Java, dependencies and assets are included. No installation or network is needed to play.
           Save files: data/. Keep this folder when updating.
@@ -42,5 +45,5 @@ jobs:
           "@
           $notesPath = Join-Path $env:RUNNER_TEMP 'portable-release.txt'
           [IO.File]::WriteAllText($notesPath, $notes, [Text.UTF8Encoding]::new($false))
-          gh release create $tag $zip.FullName --target $env:GITHUB_SHA --title '修改.exe位置 - Windows EXE 免安装版' --notes-file $notesPath --latest
+          gh release create $tag $zip.FullName $projectZip.FullName --target $env:GITHUB_SHA --title '修改.exe位置 - aut lab 完整交付' --notes-file $notesPath --latest
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }

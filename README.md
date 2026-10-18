@@ -5,6 +5,8 @@ Java + libGDX 的同机双人卡牌对战项目。当前开发平台为 Windows�
 
 ## 下载与运行
 
+[下载完整 aut lab 文件夹](https://github.com/cyf15/cyf-qxw/releases/latest/download/aut-lab-Windows-x64.zip)：包含项目源码、参考工程和可直接运行的游戏。解压后双击 `aut lab/SpireDuel.exe`。无需安装 Java。个人存档、Git 内部目录和历史构建缓存不包含在交付包中。
+
 [下载 Windows 免安装游戏包](https://github.com/cyf15/cyf-qxw/releases/latest/download/SpireDuel-Windows-x64.zip)（请选择发行附件，源码 ZIP 不是免安装游戏包）。
 
 普通玩家使用免安装包 `SpireDuel-Windows-x64.zip`：完整解压到可写目录后，双击包内的 `SpireDuel.exe`。包内自带 Java、依赖和素材，游玩不需要安装 Java、Maven 或联网下载依赖。适用 Windows 10/11 64 位，显卡需支持游戏使用的 OpenGL。存档在包内 `data/`，更新时保留；采用原生 EXE 启动器，不显示命令行窗口。请传整个 ZIP，不要只传 EXE 或 JAR。

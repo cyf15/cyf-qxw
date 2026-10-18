@@ -45,6 +45,27 @@ Bundled Java license notices: runtime/legal/.
     $zip = Join-Path $release 'SpireDuel-Windows-x64.zip'
     # Put the EXE at the extraction root so extracting into aut lab gives aut lab/SpireDuel.exe.
     Compress-Archive -Path (Join-Path $game '*') -DestinationPath $zip
+    # Deliver the project folder together with the ready-to-run game.
+    $workspace = Split-Path $project -Parent
+    $submission = Join-Path $release 'submission'
+    $wholeProject = Join-Path $submission 'aut lab'
+    New-Item -ItemType Directory -Path $wholeProject -Force | Out-Null
+    foreach ($repoRelative in @('', 'MySlayTheSpire')) {
+        $repo = Join-Path $workspace $repoRelative
+        $tracked = & git -C $repo -c core.quotepath=false ls-files
+        if ($LASTEXITCODE -ne 0) { throw 'Could not enumerate project source files.' }
+        foreach ($file in $tracked) {
+            $source = Join-Path $repo $file
+            if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+            $destination = Join-Path (Join-Path $wholeProject $repoRelative) $file
+            New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
+            Copy-Item -LiteralPath $source -Destination $destination
+        }
+    }
+    foreach ($item in Get-ChildItem -LiteralPath $game) {
+        Copy-Item -LiteralPath $item.FullName -Destination $wholeProject -Recurse -Force
+    }
+    Compress-Archive -LiteralPath $wholeProject -DestinationPath (Join-Path $release 'aut-lab-Windows-x64.zip')
     Get-FileHash $zip -Algorithm SHA256 | Format-List
     Write-Host "Portable folder: $game"
     Write-Host "Download package: $zip"
