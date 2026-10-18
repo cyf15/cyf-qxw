@@ -20,21 +20,23 @@ try {
     # Unique staging keeps previous releases and user saves untouched.
     $release = Join-Path $project ('output/portable-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
     $game = Join-Path $release 'SpireDuel'
-    New-Item -ItemType Directory -Path $game -Force | Out-Null
-    Copy-Item 'output/portable-build/spire-hotseat.jar' $game
-    Copy-Item 'output/portable-build/lib' $game -Recurse
-    & $jlink --module-path (Join-Path $JdkHome 'jmods') --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --output (Join-Path $game 'runtime')
+    $inputDir = Join-Path $release 'input'
+    New-Item -ItemType Directory -Path $inputDir -Force | Out-Null
+    Copy-Item 'output/portable-build/spire-hotseat.jar' $inputDir
+    Copy-Item 'output/portable-build/lib' $inputDir -Recurse
+    & $jlink --module-path (Join-Path $JdkHome 'jmods') --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --output (Join-Path $release 'runtime')
     if ($LASTEXITCODE -ne 0) { throw 'Runtime creation failed.' }
-    Copy-Item (Join-Path $project '../启动游戏.cmd') $game
+    & (Join-Path $JdkHome 'bin/jpackage.exe') --type app-image --name SpireDuel --input $inputDir --main-jar spire-hotseat.jar --dest $release --runtime-image (Join-Path $release 'runtime') --java-options '-Dpvp.dataDir=$APPDIR/../data' --app-version 0.1.0 --vendor 'Spire Duel'
+    if ($LASTEXITCODE -ne 0) { throw 'Native launcher creation failed.' }
     Copy-Item (Join-Path $project 'SOURCE_NOTES.md') $game
     $readme = @'
 Spire Duel - Windows x64 portable edition
 
-Extract the whole ZIP to a writable folder, then double-click 启动游戏.cmd.
+Extract the whole ZIP to a writable folder, then double-click SpireDuel.exe.
 No Java installation, Maven, source checkout, or network is required to play.
-Keep runtime/, lib/ and spire-hotseat.jar together with the launcher.
+Keep app/ and runtime/ together with SpireDuel.exe.
 Saves are created in data/. Keep that folder when updating the game.
-Startup diagnostics: logs/startup.log.
+The native launcher starts without a console window.
 Requires Windows 10/11 x64 and a working OpenGL graphics driver.
 Original game asset provenance: SOURCE_NOTES.md.
 Bundled Java license notices: runtime/legal/.

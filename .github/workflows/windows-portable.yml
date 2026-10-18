@@ -33,7 +33,7 @@ jobs:
           if (-not $zip) { throw 'Portable ZIP missing' }
           $tag = 'windows-portable-' + $env:GITHUB_SHA.Substring(0, 7)
           $notes = @"
-          Windows 10/11 x64 portable edition. Extract the whole SpireDuel-Windows-x64.zip, then double-click 启动游戏.cmd.
+          Windows 10/11 x64 portable edition. Extract the whole SpireDuel-Windows-x64.zip, then double-click SpireDuel.exe.
           Java, dependencies and assets are included. No installation or network is needed to play.
           Save files: data/. Keep this folder when updating.
           Build and unit tests ran on GitHub Actions. Requires an OpenGL graphics driver.
@@ -41,5 +41,5 @@ jobs:
           "@
           $notesPath = Join-Path $env:RUNNER_TEMP 'portable-release.txt'
           [IO.File]::WriteAllText($notesPath, $notes, [Text.UTF8Encoding]::new($false))
-          gh release create $tag $zip.FullName --target $env:GITHUB_SHA --title '启动方式修改 - Windows 免安装版' --notes-file $notesPath --latest
+          gh release create $tag $zip.FullName --target $env:GITHUB_SHA --title '修复游戏启动 - Windows EXE 免安装版' --notes-file $notesPath --latest
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
