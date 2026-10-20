@@ -8,8 +8,11 @@ import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Shared CUI/GUI engine. Each played card resolves completely before the next
- * player action; ending the turn only runs end-turn hooks and passes control. No rendering dependency.
+ * Shared CUI/GUI engine. Cards are played face-down so a player never reveals their
+ * intention: self-effects (block, draw, energy, buffs) apply immediately, while damage
+ * and block removal aimed at the opponent are queued. A round settles only after both
+ * players have completed their turns, applying the queued attacks against the defender's
+ * block accumulated that round. No rendering dependency.
  */
 public final class BattleEngine {
     private final PlayerState[] players;
@@ -18,6 +21,9 @@ public final class BattleEngine {
     private final List<CombatEvent> combatEvents = new ArrayList<>();
     private final List<GameObserver> observers = new CopyOnWriteArrayList<>();
     private final boolean[] firstTurn = {true, true};
+    /** Offensive actions deferred until the end-of-round settlement. */
+    private final List<Runnable> pending = new ArrayList<>();
+    private boolean settling = false;
     private int activePlayer;
     private int turnNumber = 1;
     private int winner = -1;
@@ -78,8 +84,8 @@ public final class BattleEngine {
         player.hand.remove(handIndex);
         PlayerState owner = player;
         PlayerState opponent = players[1 - activePlayer];
-        event("Resolve " + card.definition().name() + ".");
-        visual("CARD", owner, owner, card.definition().name(), 0, 0, card.definition());
+        event("Played a card face-down.");
+        visual("HIDDEN", owner, owner, "Card", 0, 0, null);
         int afterImage = owner.power("After Image"), cuts = owner.power("A Thousand Cuts"),
             rage = owner.power("Rage"), heatsinks = owner.power("Heatsinks"), storm = owner.power("Storm"), panache = owner.power("Panache");
         card.resolve(this, owner, opponent);
@@ -127,11 +133,35 @@ public final class BattleEngine {
             decrement(owner, "Weakened");
             decrement(owner, "Vulnerable");
             decrement(owner, "Frail");
-            activePlayer = 1 - activePlayer;
-            turnNumber++;
-            startTurn();
+            if (activePlayer == 1) settleRound();
+            if (!isOver()) {
+                activePlayer = 1 - activePlayer;
+                turnNumber++;
+                startTurn();
+            }
         }
         notifyObservers();
+    }
+
+    /**
+     * Applies every offensive action queued this round, in the order the cards were
+     * played (first player's actions before the second player's). Damage is then
+     * reduced by the defender's block gained during their own turn.
+     */
+    private void settleRound() {
+        if (pending.isEmpty() || isOver()) return;
+        settling = true;
+        try {
+            List<Runnable> queued = new ArrayList<>(pending);
+            pending.clear();
+            event("Round settles: resolving both players' attacks.");
+            for (Runnable action : queued) {
+                if (isOver()) break;
+                action.run();
+            }
+        } finally {
+            settling = false;
+        }
     }
 
     /** Current player concedes; both views may expose this without editing model state. */
@@ -229,6 +259,17 @@ public final class BattleEngine {
         visual("BLOCK", player, null, "Block", amount, 0, null);
         if (player.power("Juggernaut") > 0) damage(players[player == players[0] ? 1 : 0], player.power("Juggernaut"), false);
     }
+    /** Melter removes the opponent's block; defer it so it clears block played this round. */
+    void clearBlock(PlayerState player) {
+        if (!settling && isOpponent(player)) {
+            pending.add(() -> clearBlock(player));
+            return;
+        }
+        if (isOver() || player.block == 0) return;
+        player.block = 0;
+        event(player.hero.displayName() + " loses all Block.");
+        visual("BLOCK", player, null, "Block", 0, 0, null);
+    }
     void gainEnergy(PlayerState player, int amount) {
         if (isOver()) return;
         player.energy = Math.min(999, player.energy + amount);
@@ -246,7 +287,15 @@ public final class BattleEngine {
         damage(target, amount, ignoresBlock, source, attack, ignoresBlock ? "HP Loss" : attack ? "Attack" : "Effect");
     }
     private void damage(PlayerState target, int amount, boolean ignoresBlock, PlayerState source, boolean attack, String cause) {
-        if (isOver() || amount <= 0) return;
+        if (amount <= 0) return;
+        // Damage aimed at the opponent is hidden until the round settles, so the
+        // defender can still play block before the attack lands.
+        if (!settling && isOpponent(target)) {
+            final int queuedAmount = amount;
+            pending.add(() -> damage(target, queuedAmount, ignoresBlock, source, attack, cause));
+            return;
+        }
+        if (isOver()) return;
         if (target.power("Intangible") > 0) amount = Math.min(amount, 1);
         int absorbed = ignoresBlock ? 0 : Math.min(target.block, amount);
         target.block -= absorbed;
@@ -331,12 +380,13 @@ public final class BattleEngine {
     }
     void exhaust(PlayerState owner, GameCard card) {
         owner.exhaust.add(card);
-        event("Exhaust " + card.definition().name() + ".");
-        visual("EXHAUST", owner, null, card.definition().name(), 1, 0, card.definition());
+        event("Exhausted a card face-down.");
+        visual("EXHAUST", owner, null, "Card", 1, 0, null);
         rawBlock(owner, owner.power("Feel No Pain")); draw(owner, owner.power("Dark Embrace"));
     }
     OrbType randomOrb() { return OrbType.values()[random.nextInt(OrbType.values().length)]; }
     boolean isOver() { return winner != -1; }
+    private boolean isOpponent(PlayerState player) { return player == players[1 - activePlayer]; }
     private void finish(int result) {
         if (isOver()) return;
         winner = result;

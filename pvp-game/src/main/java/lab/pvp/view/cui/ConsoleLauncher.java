@@ -18,7 +18,7 @@ public final class ConsoleLauncher {
         } catch (RuntimeException e) { System.err.println("Cannot start: " + e.getMessage()); }
     }
     private void run() {
-        System.out.println("SPIRE HOTSEAT | local 1v1 | three classes | 15-card decks");
+        System.out.println("SPIRE HOTSEAT | local 1v1 | three classes | any deck size");
         while (true) {
             System.out.println("\n1 New match   2 Match history   3 Import deck JSON   4 Starter demo   5 Random match   0 Quit");
             String command = line();
@@ -54,9 +54,9 @@ public final class ConsoleLauncher {
     private List<String> build(Hero hero) {
         List<String> chosen = new ArrayList<>();
         List<CardDefinition> pool = controller.cards().pool(hero);
-        System.out.println("Class pool + colorless cards. Enter 'pool' to list cards, or 'random' for a ready 15-card deck.");
+        System.out.println("Class pool + colorless cards. Enter 'pool' to list cards, or 'random' for a ready deck.");
         while (true) {
-            System.out.println("\nDeck " + chosen.size() + "/15: " + chosen.stream().map(id -> controller.cards().get(id).name()).toList());
+            System.out.println("\nDeck " + chosen.size() + " cards: " + chosen.stream().map(id -> controller.cards().get(id).name()).toList());
             System.out.println("Commands: pool | add NUMBER | remove NUMBER | starter | random | clear | save NAME | load | export PATH | ready | back");
             String raw = line();
             if (raw == null || raw.equalsIgnoreCase("back")) return null;
@@ -64,10 +64,10 @@ public final class ConsoleLauncher {
                 String[] parts = raw.split("\\s+", 2);
                 switch (parts[0].toLowerCase(Locale.ROOT)) {
                     case "pool" -> { for (int i = 0; i < pool.size(); i++) printCard(i + 1, pool.get(i)); }
-                    case "add" -> { if (chosen.size() >= 15) throw new IllegalArgumentException("Deck is full."); chosen.add(pool.get(parse(arg(parts), 1, pool.size()) - 1).id()); }
+                    case "add" -> chosen.add(pool.get(parse(arg(parts), 1, pool.size()) - 1).id());
                     case "remove" -> chosen.remove(parse(arg(parts), 1, chosen.size()) - 1);
                     case "starter" -> { chosen.clear(); chosen.addAll(controller.cards().starterDeck(hero)); }
-                    case "random" -> { chosen.clear(); chosen.addAll(randomDeck(hero)); System.out.println("Random 15-card deck selected. Review or edit it, then enter 'ready'."); }
+                    case "random" -> { chosen.clear(); chosen.addAll(randomDeck(hero)); System.out.println("Random deck selected. Review or edit it, then enter 'ready'."); }
                     case "clear" -> chosen.clear();
                     case "ready" -> { controller.validateDeck(hero, chosen); return List.copyOf(chosen); }
                     case "save" -> { controller.saveDeck(arg(parts), hero, chosen); System.out.println("Deck saved."); }
@@ -86,7 +86,7 @@ public final class ConsoleLauncher {
         }
     }
     private void battle() {
-        System.out.println("Play one card at a time. All its effects resolve immediately; then you may play again.");
+        System.out.println("Play cards face-down. Damage resolves after both players finish their turns.");
         while (true) {
             BattleSnapshot state = controller.battle().snapshot();
             System.out.println("Recent actions:");
@@ -117,7 +117,7 @@ public final class ConsoleLauncher {
     }
     private String line() { return input.hasNextLine() ? input.nextLine().trim() : null; }
     private void quickDemo() {
-        System.out.println("STARTER DEMO | normal rules, 15-card starter decks, fixed seed 42; both players play manually.");
+        System.out.println("STARTER DEMO | normal rules, starter decks, fixed seed 42; both players play manually.");
         controller.startMatch(Hero.IRONCLAD, CardFactory.starterDeck(Hero.IRONCLAD),
                 Hero.SILENT, CardFactory.starterDeck(Hero.SILENT), 42);
         battle();

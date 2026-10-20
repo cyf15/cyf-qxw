@@ -59,7 +59,7 @@ public final class GameController implements AutoCloseable {
 
     public void validateDeck(Hero hero, List<String> cardIds) {
         Objects.requireNonNull(hero, "Choose a class.");
-        if (cardIds == null || cardIds.size() != 15) throw new IllegalArgumentException("A match deck must contain exactly 15 cards.");
+        if (cardIds == null || cardIds.isEmpty()) throw new IllegalArgumentException("A match deck must contain at least one card.");
         for (String id : cardIds) {
             CardDefinition card = factory.get(id);
             if (card == null) throw new IllegalArgumentException("Unknown card: " + id);

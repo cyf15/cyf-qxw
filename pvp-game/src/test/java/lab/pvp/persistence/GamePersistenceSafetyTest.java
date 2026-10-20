@@ -40,7 +40,7 @@ public class GamePersistenceSafetyTest {
                     "{\"name\":\"Keep me\",\"hero\":\"IRONCLAD\",\"cards\":null}",
                     "{\"name\":\"Keep me\",\"hero\":\"NOT_A_HERO\",\"cards\":[]}",
                     "{\"name\":\"Keep me\",\"hero\":\"IRONCLAD\",\"cards\":[null]}",
-                    "{\"name\":\"Keep me\",\"hero\":\"IRONCLAD\",\"cards\":[\"Strike_R\"]}",
+                    "{\"name\":\"Keep me\",\"hero\":\"IRONCLAD\",\"cards\":[]}",
                     deckJson("\"Does not exist\""),
                     deckJson("\"Strike_G\""),
                     deckJson("null"));

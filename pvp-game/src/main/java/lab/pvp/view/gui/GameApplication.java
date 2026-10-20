@@ -287,7 +287,7 @@ public final class GameApplication extends ApplicationAdapter {
         intro.add(eyebrow).padBottom(16).row();
         intro.add(label("SPIRE DUEL", "title")).row();
         intro.add(heading("Two players. One battleground.")).padTop(12).row();
-        Label description = label("Choose your class. Forge a 15-card deck.\nTake turns at the same keyboard and claim victory.", "body");
+        Label description = label("Choose your class. Build a deck of any size.\nTake turns at the same keyboard and claim victory.", "body");
         description.setColor(GuiAssets.MUTED);
         intro.add(description).padTop(22).padBottom(38).row();
         intro.add(button("Begin a local duel", "start", true, () -> {
@@ -299,7 +299,7 @@ public final class GameApplication extends ApplicationAdapter {
         intro.add(button("Match history", "history", false, this::showHistory)).width(310).height(48).padTop(12).row();
         intro.add(button("Settings / Options", "settings", false, this::showSettings)).width(310).height(48).padTop(12).row();
         intro.add(button("Exit game", "exit", false, this::requestExit)).width(310).height(48).padTop(12).row();
-        intro.add(muted("3 CLASSES     15 CARDS     1 SURVIVOR")).padTop(35).row();
+        intro.add(muted("3 CLASSES     ANY DECK SIZE     1 SURVIVOR")).padTop(35).row();
         intro.add(muted(controller.cards().allCards().size() + " playable source cards in the current catalog")).padTop(9).row();
         root.add(intro).expand().left().padLeft(48);
         Table right = new Table();
@@ -374,7 +374,6 @@ public final class GameApplication extends ApplicationAdapter {
         for (CardDefinition card : controller.cards().pool(hero)) {
             if (!filter.equals("ALL") && !(filter.equals("COLORLESS") ? card.hero() == null : card.type().toString().equals(filter))) continue;
             CardWidget widget = new CardWidget(assets, card, true, () -> safe(() -> {
-                if (selected.size() >= 15) { message = "Your deck is full. Remove a card to make room."; status.setText(message); return; }
                 selected.add(card.id());
                 catalogScrollY = catalogScroll.getScrollY();
                 message = "Added " + card.name() + ".";
@@ -392,9 +391,9 @@ public final class GameApplication extends ApplicationAdapter {
         deck.pad(18);
         Table count = new Table();
         count.add(heading("YOUR DECK")).left();
-        Label total = heading(selected.size() + " / 15");
+        Label total = heading(selected.size() + (selected.size() == 1 ? " card" : " cards"));
         total.setName("deck-count");
-        total.setColor(selected.size() == 15 ? GuiAssets.GOLD : GuiAssets.PAPER);
+        total.setColor(selected.isEmpty() ? GuiAssets.PAPER : GuiAssets.GOLD);
         count.add(total).expandX().right();
         deck.add(count).growX().padBottom(6).row();
         deck.add(muted("Click a selected card to remove one copy.")).left().padBottom(10).row();
@@ -412,7 +411,7 @@ public final class GameApplication extends ApplicationAdapter {
             selectedRows.add(row).growX().height(37).padBottom(4).row();
         }
         if (selected.isEmpty()) {
-            Label empty = muted("Choose cards from your class pool\nand the shared colorless pool.\n\nOr start with the suggested 15 cards\nand adjust the list to your liking.");
+            Label empty = muted("Choose cards from your class pool\nand the shared colorless pool.\n\nOr start with the suggested cards\nand adjust the list to your liking.");
             empty.setAlignment(Align.center);
             selectedRows.add(empty).width(425).padTop(38);
         }
@@ -438,23 +437,23 @@ public final class GameApplication extends ApplicationAdapter {
             message = "Saved \"" + deckName.getText().trim() + "\" to your library.";
             status.setText(message);
         });
-        save.setDisabled(selected.size() != 15);
+        save.setDisabled(selected.isEmpty());
         storage.add(save).growX().padRight(8);
         storage.add(button("Load saved", "load-deck", false, this::showLoadDecks)).growX();
         deck.add(storage).growX().padTop(8).row();
         TextButton next = button(deckPlayer == 0 ? "Lock deck & pass to Player 2" : "Enter the arena", "deck-next", true, this::confirmDeck);
-        next.setDisabled(selected.size() != 15);
+        next.setDisabled(selected.isEmpty());
         deck.add(next).growX().height(48).padTop(12);
         body.add(deck).grow();
         root.add(body).grow().row();
-        root.add(footer("Choose exactly 15 cards. Duplicate cards are allowed.")).growX().height(38).padTop(8);
+        root.add(footer("Build a deck of any size. Duplicate cards are allowed.")).growX().height(38).padTop(8);
         root.validate();
         catalogScroll.setScrollY(catalogScrollY);
         catalogScroll.updateVisualScroll();
     }
 
     private void confirmDeck() {
-        if (decks.get(deckPlayer).size() != 15) throw new IllegalArgumentException("A deck must contain exactly 15 cards.");
+        if (decks.get(deckPlayer).isEmpty()) throw new IllegalArgumentException("A deck must contain at least one card.");
         message = "";
         filter = "ALL";
         catalogScrollY = 0;
@@ -565,7 +564,7 @@ public final class GameApplication extends ApplicationAdapter {
         combatants.add(playerPanel(snapshot, 0)).growX().height(180).padRight(12);
         combatants.add(playerPanel(snapshot, 1)).growX().height(180);
         root.add(combatants).growX().padBottom(12).row();
-        root.add(muted("Play a card to resolve its effects immediately. Drawn cards and gained energy can be used this turn.")).growX().height(109).padBottom(10).row();
+        root.add(muted("Play cards face-down. Damage resolves only after both players finish their turns.")).growX().height(109).padBottom(10).row();
         PlayerSnapshot player = snapshot.players().get(snapshot.activePlayer());
         Table handHeader = new Table();
         handHeader.add(heading("YOUR HAND")).left();
@@ -590,7 +589,7 @@ public final class GameApplication extends ApplicationAdapter {
         }
         if (player.hand().isEmpty()) hand.add(label("No cards left in hand. End your turn when ready.", "body")).pad(30);
         root.add(scroll(hand, true)).growX().height(280).row();
-        Table bottom = footer("Click a card to play it immediately. Unplayed cards are discarded at the end of your turn.");
+        Table bottom = footer("Click a card to play it face-down. Unplayed cards are discarded at the end of your turn.");
         Label energy = heading(player.energy() + " ENERGY"); energy.setColor(GuiAssets.GOLD);
         bottom.add(energy).padLeft(15).padRight(25);
         bottom.add(button("End turn  >", "end-turn", true, () -> safe(() -> resolveAction(controller::endTurn)))).width(185).height(53);
@@ -642,19 +641,17 @@ public final class GameApplication extends ApplicationAdapter {
         }
         resolutionDelay = .16f;
         switch (event.kind()) {
-            case "CARD" -> {
-                resolvingCard = event.card(); resolvingHit = 0; visualCardEvents++;
-                status.setText("Resolving " + resolvingCard.name());
-                CardWidget card = new CardWidget(assets, resolvingCard, false, () -> {});
-                card.setTouchable(Touchable.disabled); card.setBounds(565, 337, 140, 202); stage.addActor(card);
-                card.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence(
+            case "HIDDEN" -> {
+                visualCardEvents++;
+                status.setText("Played a card face-down.");
+                Image back = new Image(new TextureRegionDrawable(assets.cardUi.findRegion("512/card_back")));
+                back.setBounds(565, 337, 140, 202);
+                back.setTouchable(Touchable.disabled); stage.addActor(back);
+                back.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence(
                     com.badlogic.gdx.scenes.scene2d.actions.Actions.parallel(
                         com.badlogic.gdx.scenes.scene2d.actions.Actions.moveBy(0, 45, .42f),
                         com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut(.42f)),
                     com.badlogic.gdx.scenes.scene2d.actions.Actions.removeActor()));
-                if (resolvingCard.type() == CardType.ATTACK) heroActors[player].attack();
-                var metadata = sourceEffects.get(resolvingCard.id());
-                if (metadata != null) for (var sound : metadata.getAsJsonArray("sounds")) audio.key(sound.getAsString());
                 resolutionDelay = .2f;
             }
             case "DAMAGE" -> {
@@ -686,7 +683,9 @@ public final class GameApplication extends ApplicationAdapter {
                 });
                 resolutionDelay = .24f;
             }
-            case "BLOCK" -> { flash("attack/shield", player, true); floating("+" + event.amount() + " Block", player, Color.SKY); audio.key("BLOCK_GAIN_1"); }
+            case "BLOCK" -> {
+                if (event.amount() > 0) { flash("attack/shield", player, true); floating("+" + event.amount() + " Block", player, Color.SKY); audio.key("BLOCK_GAIN_1"); }
+            }
             case "POWER" -> {
                 flash(event.name().equals("Poison") ? "attack/poison" : "buffVFX1", player, false);
                 floating(event.name() + " " + (event.amount() > 0 ? "+" : "") + event.amount(), player, GuiAssets.GOLD);

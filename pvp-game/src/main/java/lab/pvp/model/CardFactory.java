@@ -45,7 +45,7 @@ public final class CardFactory {
     }
     public static void validateDeck(Hero hero, List<String> ids) {
         if (hero == null) throw new IllegalArgumentException("Choose a hero.");
-        if (ids == null || ids.size() != 15) throw new IllegalArgumentException("A match deck must contain exactly 15 cards.");
+        if (ids == null || ids.isEmpty()) throw new IllegalArgumentException("A match deck must contain at least one card.");
         for (String id : ids) {
             CardDefinition card = get(id);
             if (card.hero() != null && card.hero() != hero)

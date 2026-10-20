@@ -32,10 +32,12 @@ public class BattleEngineTest {
         throw new AssertionError("Cannot find requested opening hand");
     }
 
-    @Test public void rejectsWrongDeckSizeUnknownCardsAndOtherClassCards() {
-        assertThrows(IllegalArgumentException.class, () -> game(Hero.IRONCLAD, List.of("Strike_R")));
+    @Test public void rejectsEmptyDeckUnknownCardsAndOtherClassCards() {
+        assertThrows(IllegalArgumentException.class, () -> game(Hero.IRONCLAD, List.of()));
         assertThrows(IllegalArgumentException.class, () -> game(Hero.IRONCLAD, deck("Strike_G")));
         assertThrows(IllegalArgumentException.class, () -> game(Hero.IRONCLAD, deck("Unimplemented")));
+        // Arbitrary deck size: a single-card deck is legal.
+        assertEquals(80, p(game(Hero.IRONCLAD, List.of("Strike_R")), 0).hp());
     }
     @Test public void catalogContainsOnlySupportedSourceCardsAndExactStarterDecks() {
         assertEquals(122, CardFactory.allCards().size());
@@ -62,18 +64,20 @@ public class BattleEngineTest {
         assertEquals(70, p(defect, 0).hp());
         assertEquals(List.of("Lightning 3/8"), p(defect, 0).orbs());
     }
-    @Test public void playSpendsEnergyAndResolvesBeforeEndTurn() {
+    @Test public void playSpendsEnergyButDamageSettlesAfterBothTurns() {
         BattleEngine engine = game(Hero.IRONCLAD, deck("Strike_R"));
         engine.playCard(0);
         assertEquals(2, p(engine, 0).energy());
-        assertEquals(74, p(engine, 1).hp());
+        assertEquals(80, p(engine, 1).hp()); // damage hidden until the round settles
         assertEquals(0, engine.snapshot().activePlayer());
         engine.endTurn();
-        assertEquals(74, p(engine, 1).hp());
+        assertEquals(80, p(engine, 1).hp()); // first player ending does not settle
         assertEquals(1, engine.snapshot().activePlayer());
         assertEquals(0, p(engine, 0).hand().size());
         assertEquals(5, p(engine, 0).discardCount());
         assertEquals(5, p(engine, 1).hand().size());
+        engine.endTurn(); // second player ends -> round settles
+        assertEquals(74, p(engine, 1).hp());
     }
     @Test public void invalidPlayDoesNotMutateAnySnapshotFieldOrNotify() {
         BattleEngine engine = game(Hero.IRONCLAD, deck("Bash"));
@@ -96,22 +100,23 @@ public class BattleEngineTest {
     }
     @Test public void playOrderAppliesStrengthBeforeOnlySubsequentAttacks() {
         BattleEngine first = firstHand(Hero.IRONCLAD, mixed("Inflame", "Strike_R"), "Inflame", "Strike_R");
-        queue(first, "Inflame"); queue(first, "Strike_R"); first.endTurn();
+        queue(first, "Inflame"); queue(first, "Strike_R"); first.endTurn(); first.endTurn();
         assertEquals(72, p(first, 1).hp());
         assertEquals(Integer.valueOf(2), p(first, 0).powers().get("Strength"));
         assertEquals(0, p(first, 0).exhaustCount()); // Power leaves play, not exhaust.
         assertEquals(4, p(first, 0).discardCount());
         BattleEngine last = firstHand(Hero.IRONCLAD, mixed("Inflame", "Strike_R"), "Inflame", "Strike_R");
-        queue(last, "Strike_R"); queue(last, "Inflame"); last.endTurn();
+        queue(last, "Strike_R"); queue(last, "Inflame"); last.endTurn(); last.endTurn();
         assertEquals(74, p(last, 1).hp());
     }
     @Test public void vulnerableAndHeavyBladeUseSourceDamageMath() {
         BattleEngine bash = firstHand(Hero.IRONCLAD, mixed("Bash", "Strike_R"), "Bash", "Strike_R");
         queue(bash, "Bash"); queue(bash, "Strike_R"); bash.endTurn();
-        assertEquals(63, p(bash, 1).hp());
         assertEquals(Integer.valueOf(2), p(bash, 1).powers().get("Vulnerable"));
+        bash.endTurn(); // settle
+        assertEquals(63, p(bash, 1).hp());
         BattleEngine blade = firstHand(Hero.IRONCLAD, mixed("Inflame", "Heavy Blade"), "Inflame", "Heavy Blade");
-        queue(blade, "Inflame"); queue(blade, "Heavy Blade"); blade.endTurn();
+        queue(blade, "Inflame"); queue(blade, "Heavy Blade"); blade.endTurn(); blade.endTurn();
         assertEquals(60, p(blade, 1).hp());
     }
     @Test public void weakLastsThroughAffectedPlayersTurnAndRoundsDown() {
@@ -193,22 +198,26 @@ public class BattleEngineTest {
     @Test public void orbsChannelPassivelyTriggerEvokeAndRespectFocus() {
         BattleEngine dual = game(Hero.DEFECT, deck("Dualcast"));
         dual.playCard(0); dual.endTurn();
-        assertEquals(64, p(dual, 1).hp());
         assertTrue(p(dual, 0).orbs().isEmpty());
+        dual.endTurn(); // settle
+        assertEquals(64, p(dual, 1).hp());
         BattleEngine frost = game(Hero.DEFECT, deck("Glacier"));
         frost.playCard(0); frost.endTurn();
         assertEquals(11, p(frost, 0).block());
         assertEquals(3, p(frost, 0).orbs().size());
+        frost.endTurn(); // settle
         assertEquals(77, p(frost, 1).hp());
         BattleEngine focus = game(Hero.DEFECT, deck("Defragment"));
         focus.playCard(0); focus.endTurn();
-        assertEquals(76, p(focus, 1).hp());
         assertEquals(List.of("Lightning 4/9"), p(focus, 0).orbs());
+        focus.endTurn(); // settle
+        assertEquals(76, p(focus, 1).hp());
     }
     @Test public void overflowEvokesOldestOrbBeforeChannelingNewOne() {
         BattleEngine engine = game(Hero.DEFECT, deck("Zap"));
         engine.playCard(0); engine.playCard(0); engine.playCard(0); engine.endTurn();
         assertEquals(3, p(engine, 0).orbs().size());
+        engine.endTurn(); // settle
         assertEquals(63, p(engine, 1).hp()); // 8 evoke + 3*3 passive.
     }
     @Test public void darkOrbStoresDamageAndInnateCardsRespectTenCardHandLimit() {
@@ -296,10 +305,11 @@ public class BattleEngineTest {
         b.playCard(0);
         assertEquals(5, p(b, 0).hand().size());
         b.playCard(4); // This slot is the card just drawn by Pommel Strike.
-        assertEquals(62, p(b, 1).hp());
         assertEquals(1, p(b, 0).energy());
         assertEquals(0, b.snapshot().activePlayer());
         assertEquals(1, b.snapshot().turnNumber());
+        b.endTurn(); b.endTurn(); // settle
+        assertEquals(62, p(b, 1).hp());
     }
     @Test public void gainedEnergyEnablesPreviouslyUnaffordableCardImmediately() {
         List<String> cards = new ArrayList<>(deck("Bash")); cards.set(0, "Seeing Red");
@@ -310,17 +320,21 @@ public class BattleEngineTest {
         assertEquals(2, p(b, 0).energy());
         queue(b, "Bash");
         assertEquals(0, p(b, 0).energy());
-        assertEquals(60, p(b, 1).hp());
         assertEquals(0, b.snapshot().activePlayer());
+        b.endTurn(); b.endTurn(); // settle
+        assertEquals(60, p(b, 1).hp());
     }
     @Test public void endTurnDoesNotReplayCardsAndOnlyThenTriggersPassiveOrbs() {
         BattleEngine b = game(Hero.DEFECT, deck("Strike_B"));
         b.playCard(0);
-        assertEquals(74, p(b, 1).hp());
-        long cards = b.combatEvents().stream().filter(e -> e.kind().equals("CARD")).count();
+        assertEquals(80, p(b, 1).hp()); // attack hidden until settlement
+        long hidden = b.combatEvents().stream().filter(e -> e.kind().equals("HIDDEN")).count();
+        assertEquals(1, hidden);
         b.endTurn();
-        assertEquals(71, p(b, 1).hp());
-        assertEquals(cards, b.combatEvents().stream().filter(e -> e.kind().equals("CARD")).count());
+        assertEquals(80, p(b, 1).hp()); // first player ending does not settle
+        assertEquals(hidden, b.combatEvents().stream().filter(e -> e.kind().equals("HIDDEN")).count());
         assertEquals(1, b.snapshot().activePlayer());
+        b.endTurn(); // settle: Strike 6 + Lightning passive 3
+        assertEquals(71, p(b, 1).hp());
     }
 }

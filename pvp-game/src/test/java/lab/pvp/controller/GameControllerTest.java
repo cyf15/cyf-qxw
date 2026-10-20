@@ -30,7 +30,7 @@ public class GameControllerTest {
     }
     @Test public void invalidDeckCannotReachDatabase() {
         try (GameController c = new GameController(data())) {
-            assertThrows(IllegalArgumentException.class, () -> c.saveDeck("short", Hero.SILENT, List.of("Strike_G")));
+            assertThrows(IllegalArgumentException.class, () -> c.saveDeck("empty", Hero.SILENT, List.of()));
             assertThrows(IllegalArgumentException.class, () -> c.saveDeck("wrong class", Hero.SILENT, Collections.nCopies(15, "Strike_R")));
             assertThrows(IllegalArgumentException.class, () -> c.saveDeck("unknown", Hero.SILENT, Collections.nCopies(15, "not a card")));
             assertTrue(c.loadDecks(Hero.SILENT).isEmpty());

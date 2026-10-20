@@ -38,22 +38,29 @@ public class SourceParityTest {
     @Test public void basePommelStrikeDrawsOneAndAngerCopiesItsBaseCard() {
         BattleEngine b = battle(Hero.IRONCLAD, "Pommel Strike", "Anger");
         play(b, "Pommel Strike"); play(b, "Anger"); b.endTurn();
-        assertEquals(9 + 6, 80 - p(b, 1).hp());
         assertTrue(b.snapshot().log().contains("Ironclad drew 1."));
         assertEquals(7, p(b, 0).discardCount());
+        b.endTurn(); // settle
+        assertEquals(9 + 6, 80 - p(b, 1).hp());
     }
     @Test public void pummelUsesFourStrengthScaledHitsAndExhausts() {
         BattleEngine b = battle(Hero.IRONCLAD, "Inflame", "Pummel");
         play(b, "Inflame"); play(b, "Pummel"); b.endTurn();
-        assertEquals(64, p(b, 1).hp()); assertEquals(1, p(b, 0).exhaustCount());
+        assertEquals(1, p(b, 0).exhaustCount());
+        b.endTurn(); // settle
+        assertEquals(64, p(b, 1).hp());
     }
     @Test public void uppercutAppliesBothDebuffs() {
         BattleEngine b = battle(Hero.IRONCLAD, "Uppercut"); play(b, "Uppercut"); b.endTurn();
-        assertEquals(67, p(b, 1).hp()); assertEquals(1, power(b, 1, "Weakened")); assertEquals(1, power(b, 1, "Vulnerable"));
+        assertEquals(1, power(b, 1, "Weakened")); assertEquals(1, power(b, 1, "Vulnerable"));
+        b.endTurn(); // settle
+        assertEquals(67, p(b, 1).hp());
     }
     @Test public void flexExpiresAfterQueuedAttacks() {
         BattleEngine b = battle(Hero.IRONCLAD, "Flex", "Strike_R"); play(b, "Flex"); play(b, "Strike_R"); b.endTurn();
-        assertEquals(72, p(b, 1).hp()); assertEquals(0, power(b, 0, "Strength"));
+        assertEquals(0, power(b, 0, "Strength"));
+        b.endTurn(); // settle
+        assertEquals(72, p(b, 1).hp());
     }
     @Test public void artifactBlocksStrengthReduction() {
         BattleEngine b = new BattleEngine(Hero.IRONCLAD, Collections.nCopies(15, "Panacea"), Hero.IRONCLAD, Collections.nCopies(15, "Disarm"), 1);
@@ -85,11 +92,14 @@ public class SourceParityTest {
     }
     @Test public void juggernautTriggersOnRawBlockGain() {
         BattleEngine b = battle(Hero.IRONCLAD, "Juggernaut", "Defend_R"); play(b, "Juggernaut"); play(b, "Defend_R"); b.endTurn();
+        b.endTurn(); // settle
         assertEquals(75, p(b, 1).hp());
     }
     @Test public void ruptureAndCombustUseHpLossAndUnmodifiedDamage() {
         BattleEngine b = battle(Hero.IRONCLAD, "Rupture", "Combust"); play(b, "Rupture"); play(b, "Combust"); b.endTurn();
-        assertEquals(79, p(b, 0).hp()); assertEquals(75, p(b, 1).hp()); assertEquals(1, power(b, 0, "Strength"));
+        assertEquals(79, p(b, 0).hp()); assertEquals(1, power(b, 0, "Strength"));
+        b.endTurn(); // settle
+        assertEquals(75, p(b, 1).hp());
     }
     @Test public void feelNoPainTriggersOnExhaustAndDarkEmbraceDraws() {
         BattleEngine b = battle(Hero.IRONCLAD, "Feel No Pain", "Dark Embrace", "Intimidate");
@@ -115,7 +125,9 @@ public class SourceParityTest {
     }
     @Test public void recursionRechannelsEvolvedOrbAndConsumeRemovesRightmostSlot() {
         BattleEngine b = battle(Hero.DEFECT, "Redo", "Consume"); play(b, "Redo"); play(b, "Consume"); b.endTurn();
-        assertEquals(2, p(b, 0).orbSlots()); assertEquals(List.of("Lightning 5/10"), p(b, 0).orbs()); assertEquals(67, p(b, 1).hp());
+        assertEquals(2, p(b, 0).orbSlots()); assertEquals(List.of("Lightning 5/10"), p(b, 0).orbs());
+        b.endTurn(); // settle
+        assertEquals(67, p(b, 1).hp());
     }
     @Test public void baseOutmaneuverGrantsTwoNextTurnEnergy() {
         BattleEngine b = battle(Hero.SILENT, "Outmaneuver"); play(b, "Outmaneuver"); b.endTurn(); b.endTurn(); assertEquals(5, p(b, 0).energy());
@@ -127,17 +139,19 @@ public class SourceParityTest {
             if (card.cost() <= 3) { b.playCard(0); b.endTurn(); }
         }
     }
-    @Test public void feedbackEventsImmediatelyIncludeEveryResolvedHit() {
+    @Test public void feedbackEventsHidePlayedCardsAndResolveHitsAtSettlement() {
         BattleEngine b = battle(Hero.IRONCLAD, "Pummel");
         int before = b.combatEvents().size(); play(b, "Pummel");
         assertTrue(b.combatEvents().size() > before);
         assertEquals(0, b.snapshot().activePlayer());
-        var events = b.combatEvents().subList(before, b.combatEvents().size());
-        var hits = events.stream().filter(e -> e.kind().equals("DAMAGE")).toList();
+        var played = b.combatEvents().subList(before, b.combatEvents().size());
+        assertEquals("HIDDEN", played.get(0).kind());
+        assertEquals(0, played.stream().filter(e -> e.kind().equals("DAMAGE")).count());
+        b.endTurn(); b.endTurn(); // settle
+        var hits = b.combatEvents().stream().filter(e -> e.kind().equals("DAMAGE") && e.name().equals("Attack")).toList();
         assertEquals(4, hits.size());
         assertEquals(List.of(78, 76, 74, 72), hits.stream().map(e -> e.state().hp()).toList());
         assertTrue(hits.stream().allMatch(e -> e.player() == 1 && e.source() == 0 && e.amount() == 2));
-        assertEquals("CARD", events.get(0).kind());
     }
     @Test public void drawViewerIsSortedAndDoesNotMutateTheNextDraw() {
         BattleEngine b = battle(Hero.IRONCLAD, "Bash");

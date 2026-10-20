@@ -6,7 +6,7 @@ final class AttackCard extends GameCard {
         String id = definition.id();
         if (id.equals("Iron Wave") || id.equals("Dash")) engine.cardBlock(owner, definition.block());
         if (id.equals("Hemokinesis")) engine.loseHp(owner, definition.magic());
-        if (id.equals("Melter")) opponent.block = 0;
+        if (id.equals("Melter")) engine.clearBlock(opponent);
         int strengthMultiplier = id.equals("Heavy Blade") ? definition.magic() : 1;
         engine.attack(owner, opponent, definition.damage(), strengthMultiplier);
         if (id.equals("Twin Strike") || id.equals("Dagger Spray") ||
