@@ -95,3 +95,7 @@ java -Dpvp.smoke=true -Dpvp.dataDir=output/gui-test-data -jar target/spire-hotse
 测试通过实际 Scene2D 按钮事件从菜单打到胜负，输出 `output/gui-smoke.json` 及各页面截图。测试存档与正式 `data/` 分开。CUI 流程证据在 `output/cui-smoke.txt`。
 
 Project 1/2 提交材料独立维护在上一层 `提交材料清单.md`，后续再整理。
+
+## CUI 演示：随机选卡
+
+Windows 下从仓库根目录运行 `命令行游戏.cmd`。主菜单的 `4 Starter demo` 使用固定种子和默认卡组，`5 Random match` 随机选择双方职业及各自职业池（含无色卡）中的 15 张卡，并在开局前完整显示卡组；实际战斗仍由两名玩家手动操作。创建自定义对局时，在卡组构筑中输入 `random` 可随机选出 15 张卡，之后可检查、移除或调整再开始。卡牌显示费用、类型、固有/消耗标签和效果说明。

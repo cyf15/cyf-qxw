@@ -5,6 +5,7 @@ import lab.pvp.model.*;
 import lab.pvp.persistence.*;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** Text view of the same application controller used by libGDX. */
 public final class ConsoleLauncher {
@@ -19,7 +20,7 @@ public final class ConsoleLauncher {
     private void run() {
         System.out.println("SPIRE HOTSEAT | local 1v1 | three classes | 15-card decks");
         while (true) {
-            System.out.println("\n1 New match   2 Match history   3 Import deck JSON   0 Quit");
+            System.out.println("\n1 New match   2 Match history   3 Import deck JSON   4 Starter demo   5 Random match   0 Quit");
             String command = line();
             if (command == null || command.equals("0")) return;
             try {
@@ -27,7 +28,9 @@ public final class ConsoleLauncher {
                     case "1" -> setup();
                     case "2" -> controller.history().forEach(System.out::println);
                     case "3" -> { System.out.println("Path:"); String p = line(); if (p != null) System.out.println(controller.importDeck(Path.of(p))); }
-                    default -> System.out.println("Choose 0, 1, 2 or 3.");
+                    case "4" -> quickDemo();
+                    case "5" -> randomMatch();
+                    default -> System.out.println("Choose 0, 1, 2, 3, 4 or 5.");
                 }
             } catch (RuntimeException e) { System.out.println("Could not complete action: " + e.getMessage()); }
         }
@@ -51,19 +54,20 @@ public final class ConsoleLauncher {
     private List<String> build(Hero hero) {
         List<String> chosen = new ArrayList<>();
         List<CardDefinition> pool = controller.cards().pool(hero);
-        System.out.println("Class pool + colorless cards. Enter 'pool' to list cards.");
+        System.out.println("Class pool + colorless cards. Enter 'pool' to list cards, or 'random' for a ready 15-card deck.");
         while (true) {
             System.out.println("\nDeck " + chosen.size() + "/15: " + chosen.stream().map(id -> controller.cards().get(id).name()).toList());
-            System.out.println("Commands: pool | add NUMBER | remove NUMBER | starter | clear | save NAME | load | export PATH | ready | back");
+            System.out.println("Commands: pool | add NUMBER | remove NUMBER | starter | random | clear | save NAME | load | export PATH | ready | back");
             String raw = line();
             if (raw == null || raw.equalsIgnoreCase("back")) return null;
             try {
                 String[] parts = raw.split("\\s+", 2);
                 switch (parts[0].toLowerCase(Locale.ROOT)) {
-                    case "pool" -> { for (int i = 0; i < pool.size(); i++) { CardDefinition c = pool.get(i); System.out.printf("%d. %s [%s, %d energy] %s%n", i + 1, c.name(), c.type(), c.cost(), c.description()); } }
+                    case "pool" -> { for (int i = 0; i < pool.size(); i++) printCard(i + 1, pool.get(i)); }
                     case "add" -> { if (chosen.size() >= 15) throw new IllegalArgumentException("Deck is full."); chosen.add(pool.get(parse(arg(parts), 1, pool.size()) - 1).id()); }
                     case "remove" -> chosen.remove(parse(arg(parts), 1, chosen.size()) - 1);
                     case "starter" -> { chosen.clear(); chosen.addAll(controller.cards().starterDeck(hero)); }
+                    case "random" -> { chosen.clear(); chosen.addAll(randomDeck(hero)); System.out.println("Random 15-card deck selected. Review or edit it, then enter 'ready'."); }
                     case "clear" -> chosen.clear();
                     case "ready" -> { controller.validateDeck(hero, chosen); return List.copyOf(chosen); }
                     case "save" -> { controller.saveDeck(arg(parts), hero, chosen); System.out.println("Deck saved."); }
@@ -99,7 +103,7 @@ public final class ConsoleLauncher {
             }
             PlayerSnapshot active = state.players().get(state.activePlayer());
             System.out.println("Turn " + state.turnNumber() + " | PLAYER " + (state.activePlayer() + 1) + " | draw " + active.drawCount() + " / discard " + active.discardCount());
-            for (int i = 0; i < active.hand().size(); i++) { CardDefinition c = active.hand().get(i); System.out.println((i + 1) + ". " + c.name() + " (" + c.cost() + ") " + c.description()); }
+            for (int i = 0; i < active.hand().size(); i++) printCard(i + 1, active.hand().get(i));
             System.out.println("Card number to play | end | quit (abandon match)");
             String raw = line();
             if (raw == null || raw.equalsIgnoreCase("quit")) return;
@@ -112,6 +116,39 @@ public final class ConsoleLauncher {
         }
     }
     private String line() { return input.hasNextLine() ? input.nextLine().trim() : null; }
+    private void quickDemo() {
+        System.out.println("STARTER DEMO | normal rules, 15-card starter decks, fixed seed 42; both players play manually.");
+        controller.startMatch(Hero.IRONCLAD, CardFactory.starterDeck(Hero.IRONCLAD),
+                Hero.SILENT, CardFactory.starterDeck(Hero.SILENT), 42);
+        battle();
+    }
+    private void randomMatch() {
+        Hero[] heroes = Hero.values();
+        Hero first = heroes[ThreadLocalRandom.current().nextInt(heroes.length)];
+        Hero second = heroes[ThreadLocalRandom.current().nextInt(heroes.length)];
+        List<String> firstDeck = randomDeck(first);
+        List<String> secondDeck = randomDeck(second);
+        System.out.println("RANDOM MATCH | Player 1: " + first.displayName() + " | Player 2: " + second.displayName());
+        System.out.println("Player 1 random deck:");
+        printCards(firstDeck.stream().map(CardFactory::get).toList());
+        System.out.println("Player 2 random deck:");
+        printCards(secondDeck.stream().map(CardFactory::get).toList());
+        controller.startMatch(first, firstDeck, second, secondDeck);
+        battle();
+    }
+    private List<String> randomDeck(Hero hero) {
+        List<CardDefinition> pool = new ArrayList<>(controller.cards().pool(hero));
+        Collections.shuffle(pool);
+        return pool.subList(0, 15).stream().map(CardDefinition::id).toList();
+    }
+    private static void printCards(List<CardDefinition> cards) {
+        if (cards.isEmpty()) System.out.println("  (empty)");
+        for (int i = 0; i < cards.size(); i++) printCard(i + 1, cards.get(i));
+    }
+    private static void printCard(int number, CardDefinition card) {
+        String tags = (card.innate() ? " | Innate" : "") + (card.exhaust() ? " | Exhaust" : "");
+        System.out.printf("%2d. %s | %d energy | %s%s%n    %s%n", number, card.name(), card.cost(), card.type(), tags, card.description());
+    }
     private static String arg(String[] parts) { if (parts.length < 2 || parts[1].isBlank()) throw new IllegalArgumentException("This command needs a value."); return parts[1]; }
     private static int parse(String value, int min, int max) {
         try { int i = Integer.parseInt(value); if (i >= min && i <= max) return i; } catch (NumberFormatException ignored) {}
